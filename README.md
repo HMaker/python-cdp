@@ -1,11 +1,7 @@
 # PyCDP
+Up to date fork of [python-chrome-devtools-protocol][1]. Currently supports CDP [r970581][2] (Chrome 97).
 
-[![PyPI](https://img.shields.io/pypi/v/chrome-devtools-protocol.svg)](https://pypi.org/project/chrome-devtools-protocol/)
-![Python Versions](https://img.shields.io/pypi/pyversions/chrome-devtools-protocol)
-![MIT License](https://img.shields.io/github/license/HyperionGray/python-chrome-devtools-protocol.svg)
-[![Build Status](https://img.shields.io/travis/com/HyperionGray/python-chrome-devtools-protocol.svg?branch=master)](https://travis-ci.com/HyperionGray/python-chrome-devtools-protocol)
-[![Read the Docs](https://img.shields.io/readthedocs/py-cdp.svg)](https://py-cdp.readthedocs.io)
-
+## Description
 Python Chrome DevTools Protocol (shortened to PyCDP) is a library that provides
 Python wrappers for the types, commands, and events specified in the [Chrome
 DevTools Protocol](https://github.com/ChromeDevTools/devtools-protocol/).
@@ -27,6 +23,5 @@ opening a socket or negotiating a WebSocket protocol. Instead, that
 responsibility is left to higher-level libraries, for example
 [trio-chrome-devtools-protocol](https://github.com/hyperiongray/trio-chrome-devtools-protocol).
 
-For more information, see the [complete documentation](https://py-cdp.readthedocs.io).
-
-<a href="https://www.hyperiongray.com/?pk_campaign=github&pk_kwd=pycdp"><img alt="define hyperion gray" width="500px" src="https://hyperiongray.s3.amazonaws.com/define-hg.svg"></a>
+[1]: https://github.com/HyperionGray/python-chrome-devtools-protocol
+[2]: https://github.com/ChromeDevTools/devtools-protocol/tree/1b1e643d77dacc9568b5acc1efdeaec19c048a27
