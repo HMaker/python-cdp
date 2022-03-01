@@ -23,5 +23,11 @@ opening a socket or negotiating a WebSocket protocol. Instead, that
 responsibility is left to higher-level libraries, for example
 [trio-chrome-devtools-protocol](https://github.com/hyperiongray/trio-chrome-devtools-protocol).
 
+<br>
+<hr>
+Copyright &copy; 2018 Hyperion Gray<br>
+Copyright &copy; 2022 Heraldo Lucena
+<hr>
+
 [1]: https://github.com/HyperionGray/python-chrome-devtools-protocol
 [2]: https://github.com/ChromeDevTools/devtools-protocol/tree/1b1e643d77dacc9568b5acc1efdeaec19c048a27
