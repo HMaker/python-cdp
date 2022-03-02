@@ -1028,10 +1028,8 @@ def cdpgen():
         return path
     parser = ArgumentParser(
         usage='%(prog)s <arguments>',
-        description=(
-            'Generate Python types for the Chrome Devtools Protocol (CDP) specification.\n'
-            'JSON files for the CDP spec can be found at https://github.com/ChromeDevTools/devtools-protocol'
-        )
+        description='Generate Python types for the Chrome Devtools Protocol (CDP) specification.',
+        epilog='JSON files for the CDP spec can be found at https://github.com/ChromeDevTools/devtools-protocol'
     )
     parser.add_argument(
         '--browser-protocol',
