@@ -1,5 +1,5 @@
 # PyCDP
-Up to date fork of [python-chrome-devtools-protocol][1]. Currently supports CDP [r970581][2] (Chrome 97).
+Python type wrappers generator for the Chrome DevTools Protocol (CDP). Currently supports CDP [r970581][2] (Chrome 97).
 
 ## Usage
 You can install this package as a dependency to use the builtin CDP types with `import cdp`, but if you want to try a different CDP version you can build new wrappers with `cdpgen` command:
@@ -44,8 +44,7 @@ flexibility, this library does not actually handle any network I/O, such as
 opening a socket or negotiating a WebSocket protocol. Instead, that
 responsibility is left to higher-level libraries, for example
 [trio-chrome-devtools-protocol](https://github.com/hyperiongray/trio-chrome-devtools-protocol).
-
-<br>
+<br><br>
 <hr>
 Copyright &copy; 2018 Hyperion Gray<br>
 Copyright &copy; 2022 Heraldo Lucena
