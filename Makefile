@@ -9,19 +9,19 @@ docs:
 	$(MAKE) -C docs html
 
 generate:
-	python generator/generate.py
+	python cdpgen/generate.py
 
 mypy-cdp:
 	mypy cdp/
 
 mypy-generate:
-	mypy generator/
+	mypy cdpgen/
 
 test-cdp:
 	pytest test/
 
 test-generate:
-	pytest generator/
+	pytest cdpgen/
 
 test-import:
 	python -c 'import cdp; print(cdp.accessibility)'

@@ -25,6 +25,9 @@ sphinx = "^3.0.1"
 sphinx-autodoc-typehints = "^1.10.3"
 sphinx-rtd-theme = "^0.4.3"
 
+[tool.poetry.scripts]
+cdpgen = "cdpgen.generate:cdpgen"
+
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"

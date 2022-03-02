@@ -12,7 +12,7 @@ codegen tests is almost always easier with the values displayed on stdout.
 
 from textwrap import dedent
 
-from generate import CdpCommand, CdpDomain, CdpEvent, CdpType, docstring
+from .generate import CdpCommand, CdpDomain, CdpEvent, CdpType, docstring
 
 
 def test_docstring():
