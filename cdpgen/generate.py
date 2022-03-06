@@ -95,9 +95,12 @@ def docstring(description: typing.Optional[str]) -> str:
     ''' Generate a docstring from a description. '''
     if not description:
         return ''
-
+    # if original description uses escape sequences it should be generated as a raw docstring
     description = escape_backticks(description)
-    return dedent("'''\n{}\n'''").format(description)
+    if '\\' in description:
+        return dedent("r'''\n{}\n'''").format(description)
+    else:
+        return dedent("'''\n{}\n'''").format(description)
 
 
 def is_builtin(name: str) -> bool:
@@ -215,18 +218,18 @@ class CdpProperty:
         return ann
 
     @classmethod
-    def from_json(cls, property, domain: str) -> 'CdpProperty':
+    def from_json(cls, prop, domain: str) -> 'CdpProperty':
         ''' Instantiate a CDP property from a JSON object. '''
         return cls(
-            property['name'],
-            property.get('description'),
-            property.get('type'),
-            property.get('$ref'),
-            property.get('enum'),
-            CdpItems.from_json(property['items']) if 'items' in property else None,
-            property.get('optional', False),
-            property.get('experimental', False),
-            property.get('deprecated', False),
+            prop['name'],
+            prop.get('description'),
+            prop.get('type'),
+            prop.get('$ref'),
+            prop.get('enum'),
+            CdpItems.from_json(prop['items']) if 'items' in prop else None,
+            prop.get('optional', False),
+            prop.get('experimental', False),
+            prop.get('deprecated', False),
             domain
         )
 
@@ -974,11 +977,6 @@ def selfgen():
     ]
     output_path = here.parent / 'cdp'
     output_path.mkdir(exist_ok=True)
-
-    # Remove generated code
-    for subpath in output_path.iterdir():
-        if subpath.is_file() and subpath.name not in ('py.typed', 'util.py'):
-            subpath.unlink()
 
     # Parse domains
     domains = list()

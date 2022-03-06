@@ -45,7 +45,7 @@ You can then include the `/tmp/cdp` package in your project and import it like t
 
 <br>
 <hr>
-PyCDP is licensed under the [MIT License](LICENSE).
+PyCDP is licensed under the MIT License.
 <hr>
 
 [1]: https://github.com/ChromeDevTools/devtools-protocol/

@@ -235,7 +235,7 @@ def fulfill_request(
         body: typing.Optional[str] = None,
         response_phrase: typing.Optional[str] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
-    '''
+    r'''
     Provides response to the request.
 
     :param request_id: An id the client received in requestPaused event.
@@ -327,7 +327,7 @@ def continue_response(
         response_headers: typing.Optional[typing.List[HeaderEntry]] = None,
         binary_response_headers: typing.Optional[str] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
-    '''
+    r'''
     Continues loading of the paused response, optionally modifying the
     response headers. If either responseCode or headers are modified, all of them
     must be present.
