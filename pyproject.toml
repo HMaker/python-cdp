@@ -24,9 +24,9 @@ authors = [
 [tool.poetry.dependencies]
 python = "^3.7"
 deprecated = "1.2.9"
+inflection = "0.4.0"
 
 [tool.poetry.dev-dependencies]
-inflection = "^0.4.0"
 mypy = "^0.770"
 pytest = "^5.4.1"
 sphinx = "^3.0.1"
