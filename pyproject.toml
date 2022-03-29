@@ -1,21 +1,29 @@
 [tool.poetry]
 name = "chrome-devtools-protocol"
-packages = [{include = "cdp"}]
-version = "0.5.0"
+version = "1.0.0"
 description = "Python type wrappers for Chrome DevTools Protocol (CDP)"
-authors = ["Mark E. Haase <mehaase@gmail.com>", "Brian Mackintosh <bcmackintosh@gmail.com>"]
+packages = [
+    {include = "cdp"},
+    {include = "cdpgen"}
+]
 license = "MIT"
 readme = "README.md"
-homepage = "https://github.com/hyperiongray/python-chrome-devtools-protocol"
+homepage = "https://github.com/HMaker/python-cdp"
 classifiers = [
+    "Programming Language :: Python :: 3 :: Only",
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Topic :: Internet"
 ]
+authors = [
+    "Mark E. Haase <mehaase@gmail.com>",
+    "Brian Mackintosh <bcmackintosh@gmail.com>",
+    "Heraldo Lucena <heraldo.dev@gmail.com>"
+]
 
 [tool.poetry.dependencies]
 python = "^3.7"
-deprecated = "^1.2.9"
+deprecated = "1.2.9"
 
 [tool.poetry.dev-dependencies]
 inflection = "^0.4.0"

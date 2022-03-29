@@ -20,6 +20,14 @@ opening a socket or negotiating a WebSocket protocol. Instead, that
 responsibility is left to higher-level libraries, for example
 [trio-chrome-devtools-protocol][4].
 
+## Installation
+You can install this library as a dependency on your project with:
+```
+pip install git+https://github.com/HMaker/python-cdp.git@1.0.0
+```
+Change the git tag `@1.0.0` if you need another version. To install for development, clone this
+repository, install [Poetry][5] package manager and run `poetry install` to install dependencies.
+
 ## Usage
 You can install this package as a dependency to use the builtin CDP types with `import cdp`, but if you want to try a different CDP version you can build new wrappers with `cdpgen` command:
 ```
@@ -43,6 +51,27 @@ cdpgen --browser-protocol browser_protocol.json --js-protocol js_protocol.json -
 ```
 You can then include the `/tmp/cdp` package in your project and import it like the builtin CDP types.
 
+## Implementation of a CDP client
+The `cdp` package follows same structure of CDP domains, each domain is a Python class and each command
+a method of that class.
+
+Each method is a generator function with a single yield which is a Python dict, on the CDP wire format,
+containing the message that should be sent to the browser:
+```python
+import cdp
+
+# Get all CDP targets
+command = cdp.target.get_targets() # this is a generator
+raw_cdp_request = next(command) # receive the yield
+raw_cdp_response = send_cdp_request(raw_cdp_request) # you implement send_cdp_request, raw_cdp_request is the JSON object that should be sent to browser
+try:
+    command.send(raw_cdp_response) # send the response to the generator where raw_cdp_response is the JSON object received from browser, it will raise StopIteration
+    raise RuntimeError("the generator didnt exit!") # this shouldnt happen
+except StopIteration as result:
+    response = result.value # the parsed response to Target.get_targets() command
+print(response)
+```
+
 <br>
 <hr>
 PyCDP is licensed under the MIT License.
@@ -52,3 +81,4 @@ PyCDP is licensed under the MIT License.
 [2]: https://github.com/HyperionGray/python-chrome-devtools-protocol
 [3]: https://github.com/ChromeDevTools/devtools-protocol/tree/1b1e643d77dacc9568b5acc1efdeaec19c048a27
 [4]: https://github.com/hyperiongray/trio-chrome-devtools-protocol
+[5]: https://python-poetry.org/docs/
