@@ -78,7 +78,6 @@ PyCDP is licensed under the MIT License.
 <hr>
 
 [1]: https://github.com/ChromeDevTools/devtools-protocol/
-[2]: https://github.com/HyperionGray/python-chrome-devtools-protocol
-[3]: https://github.com/ChromeDevTools/devtools-protocol/tree/1b1e643d77dacc9568b5acc1efdeaec19c048a27
+[2]: https://github.com/ChromeDevTools/devtools-protocol/tree/1b1e643d77dacc9568b5acc1efdeaec19c048a27
 [4]: https://github.com/hyperiongray/trio-chrome-devtools-protocol
 [5]: https://python-poetry.org/docs/
