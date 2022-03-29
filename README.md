@@ -56,7 +56,7 @@ The `cdp` package follows same structure of CDP domains, each domain is a Python
 a method of that class.
 
 Each method is a generator function with a single yield which is a Python dict, on the CDP wire format,
-containing the message that should be sent to the browser:
+containing the message that should be sent to the browser, on resumption the generator receives the message from browser:
 ```python
 import cdp
 
@@ -71,6 +71,7 @@ except StopIteration as result:
     response = result.value # the parsed response to Target.get_targets() command
 print(response)
 ```
+For implementation details check out the [docs][3].
 
 <br>
 <hr>
@@ -79,5 +80,6 @@ PyCDP is licensed under the MIT License.
 
 [1]: https://github.com/ChromeDevTools/devtools-protocol/
 [2]: https://github.com/ChromeDevTools/devtools-protocol/tree/1b1e643d77dacc9568b5acc1efdeaec19c048a27
+[3]: docs/getting_started.rst
 [4]: https://github.com/hyperiongray/trio-chrome-devtools-protocol
 [5]: https://python-poetry.org/docs/
