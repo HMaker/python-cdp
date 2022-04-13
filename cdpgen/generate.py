@@ -284,7 +284,7 @@ class CdpProperty:
                 expr = CdpPrimitiveType.get_constructor(self.type,
                     f"{dict_}['{self.name}']")
         if self.optional:
-            expr = f"{expr} if '{self.name}' in {dict_} else None"
+            expr = f"{expr} if {dict_}.get('{self.name}', None) is not None else None"
         return expr
 
 
@@ -968,6 +968,33 @@ def generate_docs(docs_path, domains):
             f.write(domain.generate_sphinx())
 
 
+def fix_protocol_spec(domains):
+    """Fixes following errors in the official CDP spec:
+    1. DOM includes an erroneous $ref that refers to itself.
+    2. Page includes an event with an extraneous backtick in the description.
+    3. Network.Cookie.expires is optional because sometimes its value can be null."""
+    for domain in domains:
+        if domain.domain == 'DOM':
+            for cmd in domain.commands:
+                if cmd.name == 'resolveNode':
+                    # Patch 1
+                    cmd.parameters[1].ref = 'BackendNodeId'
+                    break
+        elif domain.domain == 'Page':
+            for event in domain.events:
+                if event.name == 'screencastVisibilityChanged':
+                    # Patch 2
+                    event.description = event.description.replace('`', '')
+                    break
+        elif domain.domain == 'Network':
+            for _type in domain.types:
+                if _type.id == 'Cookie':
+                    for prop in _type.properties:
+                        if prop.name == 'expires':
+                            prop.optional = True
+                            break
+
+
 def selfgen():
     '''Generate CDP types and docs for ourselves'''
     here = Path(__file__).parent.resolve()
@@ -984,23 +1011,7 @@ def selfgen():
         logger.info('Parsing JSON file %s', json_path)
         domains.extend(parse(json_path, output_path))
     domains.sort(key=operator.attrgetter('domain'))
-
-    # Patch up CDP errors. It's easier to patch that here than it is to modify
-    # the generator code.
-    # 1. DOM includes an erroneous $ref that refers to itself.
-    # 2. Page includes an event with an extraneous backtick in the description.
-    for domain in domains:
-        if domain.domain == 'DOM':
-            for cmd in domain.commands:
-                if cmd.name == 'resolveNode':
-                    # Patch 1
-                    cmd.parameters[1].ref = 'BackendNodeId'
-        elif domain.domain == 'Page':
-            for event in domain.events:
-                if event.name == 'screencastVisibilityChanged':
-                    # Patch 2
-                    event.description = event.description.replace('`', '')
-
+    fix_protocol_spec(domains)
     for domain in domains:
         logger.info('Generating module: %s → %s.py', domain.domain,
             domain.module)
@@ -1058,18 +1069,7 @@ def cdpgen():
         logger.info('Parsing JSON file %s', json_path)
         domains.extend(parse(json_path, output))
     domains.sort(key=operator.attrgetter('domain'))
-    # fix errors from spec files
-    for domain in domains:
-        if domain.domain == 'DOM':
-            for cmd in domain.commands:
-                if cmd.name == 'resolveNode':
-                    # Patch 1
-                    cmd.parameters[1].ref = 'BackendNodeId'
-        elif domain.domain == 'Page':
-            for event in domain.events:
-                if event.name == 'screencastVisibilityChanged':
-                    # Patch 2
-                    event.description = event.description.replace('`', '')
+    fix_protocol_spec(domains)
     # generate python code
     for domain in domains:
         logger.info('Generating module: %s → %s/%s.py', domain.domain, output, domain.module)
