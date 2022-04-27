@@ -1,7 +1,7 @@
 '''
 Some basic tests for the generated CDP modules.
 '''
-from cdp import dom, io, page, tracing, util
+from pycdp.cdp import dom, io, page, tracing, util
 
 
 def test_primitive_type():
