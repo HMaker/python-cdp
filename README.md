@@ -14,12 +14,6 @@ not catch any typos in your JSON objects, and you wouldn't get autocomplete for
 any parts of the JSON data structure. By providing a set of native Python
 wrappers, this project makes it easier and faster to write CDP client code.
 
-**This library does not perform any I/O!** In order to maximize
-flexibility, this library does not actually handle any network I/O, such as
-opening a socket or negotiating a WebSocket protocol. Instead, that
-responsibility is left to higher-level libraries, for example
-[trio-chrome-devtools-protocol][4].
-
 ## Installation
 You can install this library as a dependency on your project with:
 ```
@@ -29,7 +23,28 @@ Change the git tag `@1.0.0` if you need another version. To install for developm
 repository, install [Poetry][5] package manager and run `poetry install` to install dependencies.
 
 ## Usage
-You can install this package as a dependency to use the builtin CDP types with `import cdp`, but if you want to try a different CDP version you can build new wrappers with `cdpgen` command:
+If all you want is automate Chrome right now, `pycdp.asyncio` module contains a low-level client for asyncio:
+```python
+import asyncio
+from pycdp import cdp
+from pycdp.asyncio import connect_cdp
+
+
+async def main():
+    conn = await connect_cdp('http://localhost:9222')
+    target_id = await conn.execute(cdp.target.create_target('about:blank'))
+    target_session = await conn.connect_session(target_id)
+    await target_session.execute(cdp.page.navigate('https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-navigate'))
+    try:
+        await asyncio.get_running_loop().create_future()
+    finally:
+        await target_session.execute(cdp.page.close())
+
+asyncio.run(main())
+```
+where chrome debugger is listening on `http://localhost:9222` (started by `google-chrome --remote-debugging-port=9222`).
+
+You also can use just the builtin CDP types with `import pycdp.cdp` on your own client implementation. If you want to try a different CDP version you can build new type wrappers with `cdpgen` command:
 ```
 usage: cdpgen <arguments>
 
@@ -52,10 +67,9 @@ cdpgen --browser-protocol browser_protocol.json --js-protocol js_protocol.json -
 You can then include the `/tmp/cdp` package in your project and import it like the builtin CDP types.
 
 ## Implementation of a CDP client
-The `cdp` package follows same structure of CDP domains, each domain is a Python class and each command
-a method of that class.
+The `pycdp.cdp` package follows same structure of CDP domains, each domain is Python module and each command a function in that module.
 
-Each method is a generator function with a single yield which is a Python dict, on the CDP wire format,
+Each function is a generator with a single yield which is a Python dict, on the CDP wire format,
 containing the message that should be sent to the browser, on resumption the generator receives the message from browser:
 ```python
 import cdp
