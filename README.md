@@ -29,19 +29,33 @@ import asyncio
 from pycdp import cdp
 from pycdp.asyncio import connect_cdp
 
+async def listen_request_responses(target_session):
+    async for event in target_session.listen(cdp.network.ResponseReceived): 
+        # loop which runs for each new event
+        print(event)
+
+async def listen_ws_message(target_session):
+    async with target_session.wait_for(cdp.network.WebSocketFrameSent) as event:
+        # wait_for() its same as listen but is fired a single time only
+        print("this is fired a single time only")
 
 async def main():
     conn = await connect_cdp('http://localhost:9222')
     target_id = await conn.execute(cdp.target.create_target('about:blank'))
     target_session = await conn.connect_session(target_id)
-    await target_session.execute(cdp.page.navigate('https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-navigate'))
+    await target_session.execute(cdp.page.navigate('https://chromedevtools.github.io/devtools-protocol/'))
+    await target_session.execute(cdp.network.enable()) # enable the domain 
+    tasks = [] # each event listener should run on its own task
     try:
-        await asyncio.get_running_loop().create_future()
+        tasks.append(asyncio.create_task(listen_request_responses(target_session)))
+        tasks.append(asyncio.create_task(listen_ws_message(target_session)))
+        await asyncio.gather(*tasks) # takes a list of tasks and await them all
     finally:
         await target_session.execute(cdp.page.close())
 
 asyncio.run(main())
 ```
+
 where chrome debugger is listening on `http://localhost:9222` (started by `google-chrome --remote-debugging-port=9222`).
 
 You also can use just the builtin CDP types with `import pycdp.cdp` on your own client implementation. If you want to try a different CDP version you can build new type wrappers with `cdpgen` command:
