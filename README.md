@@ -17,9 +17,9 @@ wrappers, this project makes it easier and faster to write CDP client code.
 ## Installation
 You can install this library as a dependency on your project with:
 ```
-pip install git+https://github.com/HMaker/python-cdp.git@1.0.0
+pip install git+https://github.com/HMaker/python-cdp.git@latest
 ```
-Change the git tag `@1.0.0` if you need another version. To install for development, clone this
+Change the git tag `@latest` if you need another version. To install for development, clone this
 repository, install [Poetry][5] package manager and run `poetry install` to install dependencies.
 
 ## Usage
