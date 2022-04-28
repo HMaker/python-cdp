@@ -95,7 +95,7 @@ class CDPEventListener:
             self._closed = True
 
     def __str__(self) -> str:
-        return f'{self.__class__.__name__}(buffer={repr(self._queue.qsize())}/{repr(self._queue.maxsize())}, closed={repr(self._closed)})'
+        return f'{self.__class__.__name__}(buffer={self._queue.qsize()}/{self._queue.maxsize}, closed={self._closed})'
 
 
 class CDPBase(LoggerMixin):

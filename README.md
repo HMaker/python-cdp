@@ -31,25 +31,26 @@ from pycdp.asyncio import connect_cdp
 
 async def listen_request_responses(target_session):
     async for event in target_session.listen(cdp.network.ResponseReceived): 
-        # loop which runs for each new event
+        # runs for each new event
         print(event)
 
-async def listen_ws_message(target_session):
-    async with target_session.wait_for(cdp.network.WebSocketFrameSent) as event:
-        # wait_for() its same as listen but is fired a single time only
+async def listen_websocket_message(target_session):
+    async with target_session.wait_for(cdp.network.WebSocketFrameReceived) as event:
+        # wait_for() is the same as listen() but it's fired a single time only
         print("this is fired a single time only")
 
 async def main():
     conn = await connect_cdp('http://localhost:9222')
     target_id = await conn.execute(cdp.target.create_target('about:blank'))
     target_session = await conn.connect_session(target_id)
+    await target_session.execute(cdp.network.enable())
     await target_session.execute(cdp.page.navigate('https://chromedevtools.github.io/devtools-protocol/'))
-    await target_session.execute(cdp.network.enable()) # enable the domain 
-    tasks = [] # each event listener should run on its own task
+    tasks = []
     try:
+        # each event listener should run on its own task
         tasks.append(asyncio.create_task(listen_request_responses(target_session)))
-        tasks.append(asyncio.create_task(listen_ws_message(target_session)))
-        await asyncio.gather(*tasks) # takes a list of tasks and await them all
+        tasks.append(asyncio.create_task(listen_websocket_message(target_session)))
+        await asyncio.gather(*tasks)
     finally:
         await target_session.execute(cdp.page.close())
 
