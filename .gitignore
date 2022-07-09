@@ -10,3 +10,4 @@ __pycache__
 /.vscode
 /.tool-versions
 /test_*
+/*.log

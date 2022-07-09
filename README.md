@@ -27,44 +27,47 @@ If all you want is automate Chrome right now, PyCDP includes a low-level client 
 ```python
 import asyncio
 from pycdp import cdp
+from pycdp.browser import ChromeLauncher
 from pycdp.asyncio import connect_cdp
 
-async def listen_request_responses(target_session):
-    async for event in target_session.listen(cdp.network.ResponseReceived): 
-        # runs for each new event
-        print(event)
-
-async def listen_websocket_message(target_session):
-    async with target_session.wait_for(cdp.network.WebSocketFrameReceived) as event:
-        # wait_for() is the same as listen() but it's fired a single time only
-        print("this is fired a single time only")
-
 async def main():
+    chrome = ChromeLauncher(
+        binary='/usr/bin/google-chrome' # linux path
+        args=['--remote-debugging-port=9222', '--incognito']
+    )
+    # ChromeLauncher.launch() is blocking, run it on a background thread
+    await asyncio.get_running_loop().run_in_executor(None, chrome.launch)
     conn = await connect_cdp('http://localhost:9222')
     target_id = await conn.execute(cdp.target.create_target('about:blank'))
     target_session = await conn.connect_session(target_id)
-    await target_session.execute(cdp.network.enable())
+    await target_session.execute(cdp.page.enable())
     await target_session.execute(cdp.page.navigate('https://chromedevtools.github.io/devtools-protocol/'))
-    tasks = []
-    try:
-        # each event listener should run on its own task
-        tasks.append(asyncio.create_task(listen_request_responses(target_session)))
-        tasks.append(asyncio.create_task(listen_websocket_message(target_session)))
-        await asyncio.gather(*tasks)
-    finally:
-        await target_session.execute(cdp.page.close())
+    # you may use "async for target_session.listen()" to listen multiple events, here we listen just a single event.
+    async with target_session.wait_for(cdp.page.DomContentEventFired):
+        dom = await target_session.execute(cdp.dom.get_document())
+        node = await target_session.execute(cdp.dom.query_selector(dom.node_id, 'p'))
+        js_node = await target_session.execute(cdp.dom.resolve_node(node))
+        print((await target_session.execute(cdp.runtime.call_function_on('function() {return this.innerText;}', js_node.object_id, return_by_value=True)))[0].value)
+    await target_session.execute(cdp.page.close())
+    await conn.close()
+    await asyncio.get_running_loop().run_in_executor(None, chrome.kill)
 
 asyncio.run(main())
 ```
 the twisted client requires [twisted][6] and [autobahn][7] packages:
 ```python
 from twisted.python.log import err
-from twisted.internet import reactor, defer
+from twisted.internet import reactor, defer, threads
 from pycdp import cdp
+from pycdp.browser import ChromeLauncher
 from pycdp.twisted import connect_cdp
 
-
 async def main():
+    chrome = ChromeLauncher(
+        binary='C:\Program Files\Google\Chrome\Application\chrome.exe', # windows path
+        args=['--remote-debugging-port=9222', '--incognito']
+    )
+    await threads.deferToThread(chrome.launch)
     conn = await connect_cdp('http://localhost:9222', reactor)
     target_id = await conn.execute(cdp.target.create_target('about:blank'))
     target_session = await conn.connect_session(target_id)
@@ -77,7 +80,7 @@ async def main():
         print((await target_session.execute(cdp.runtime.call_function_on('function() {return this.innerText;}', js_node.object_id, return_by_value=True)))[0].value)
     await target_session.execute(cdp.page.close())
     await conn.close()
-
+    await threads.deferToThread(chrome.kill)
 
 def main_error(failure):
     err(failure)
