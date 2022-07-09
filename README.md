@@ -23,7 +23,7 @@ Change the git tag `@latest` if you need another version. To install for develop
 repository, install [Poetry][5] package manager and run `poetry install` to install dependencies.
 
 ## Usage
-If all you want is automate Chrome right now, `pycdp.asyncio` module contains a low-level client for asyncio:
+If all you want is automate Chrome right now, PyCDP includes a low-level client for asyncio and twisted:
 ```python
 import asyncio
 from pycdp import cdp
@@ -55,6 +55,38 @@ async def main():
         await target_session.execute(cdp.page.close())
 
 asyncio.run(main())
+```
+the twisted client requires [twisted][6] and [autobahn][7] packages:
+```python
+from twisted.python.log import err
+from twisted.internet import reactor, defer
+from pycdp import cdp
+from pycdp.twisted import connect_cdp
+
+
+async def main():
+    conn = await connect_cdp('http://localhost:9222', reactor)
+    target_id = await conn.execute(cdp.target.create_target('about:blank'))
+    target_session = await conn.connect_session(target_id)
+    await target_session.execute(cdp.page.enable())
+    await target_session.execute(cdp.page.navigate('https://chromedevtools.github.io/devtools-protocol/'))
+    async with target_session.wait_for(cdp.page.DomContentEventFired):
+        dom = await target_session.execute(cdp.dom.get_document())
+        node = await target_session.execute(cdp.dom.query_selector(dom.node_id, 'p'))
+        js_node = await target_session.execute(cdp.dom.resolve_node(node))
+        print((await target_session.execute(cdp.runtime.call_function_on('function() {return this.innerText;}', js_node.object_id, return_by_value=True)))[0].value)
+    await target_session.execute(cdp.page.close())
+    await conn.close()
+
+
+def main_error(failure):
+    err(failure)
+    reactor.stop()
+
+d = defer.ensureDeferred(main())
+d.addErrback(main_error)
+d.addCallback(lambda *args: reactor.stop())
+reactor.run()
 ```
 
 where chrome debugger is listening on `http://localhost:9222` (started by `google-chrome --remote-debugging-port=9222`).
@@ -112,3 +144,5 @@ PyCDP is licensed under the MIT License.
 [3]: docs/getting_started.rst
 [4]: https://github.com/hyperiongray/trio-chrome-devtools-protocol
 [5]: https://python-poetry.org/docs/
+[6]: https://pypi.org/project/Twisted/
+[7]: https://pypi.org/project/autobahn/
