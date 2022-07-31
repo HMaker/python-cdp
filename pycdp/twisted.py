@@ -7,7 +7,7 @@ from twisted.web.client import Agent, Response, readBody
 from twisted.internet.defer import DeferredQueue, QueueOverflow, Deferred, CancelledError
 from autobahn.twisted.websocket import WebSocketClientProtocol, WebSocketClientFactory
 from pycdp.exceptions import *
-from pycdp.utils import ContextLoggerMixin, LoggerMixin
+from pycdp.utils import ContextLoggerMixin, LoggerMixin, retry_on
 from pycdp import cdp
 
 
@@ -222,6 +222,7 @@ class CDPConnection(CDPBase):
     def had_normal_closure(self) -> bool:
         return not self._ws.remoteCloseCode or (self._ws.closedByMe and self._ws.localCloseCode == 1000)
 
+    @retry_on(ConnectionRefusedError, retries=10, delay=1.0, log_errors=True)
     async def connect(self):
         if self._ws is not None: raise RuntimeError('already connected')
         if self._wsurl is None:
