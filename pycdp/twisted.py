@@ -303,8 +303,8 @@ class CDPSession(CDPBase, ContextLoggerMixin):
         if len(self._inflight_cmd) > 0:
             exc = CDPSessionClosed()
             for (_, event) in self._inflight_cmd.values():
-                if not event.done():
-                    event.set_exception(exc)
+                if not event.called:
+                    event.errback(exc)
             self._inflight_cmd.clear()
         self.close_listeners()
 
