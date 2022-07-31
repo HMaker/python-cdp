@@ -3,6 +3,7 @@ import itertools
 import typing as t
 from collections import defaultdict
 from contextlib import asynccontextmanager
+from twisted.internet.error import ConnectionRefusedError
 from twisted.web.client import Agent, Response, readBody
 from twisted.internet.defer import DeferredQueue, QueueOverflow, Deferred, CancelledError
 from autobahn.twisted.websocket import WebSocketClientProtocol, WebSocketClientFactory
