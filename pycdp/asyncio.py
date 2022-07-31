@@ -12,11 +12,20 @@ from aiohttp.client_exceptions import (
     ClientResponseError, ClientConnectorError, ClientConnectionError, ServerDisconnectedError
 )
 from pycdp.exceptions import *
+from pycdp.base import IEventLoop
 from pycdp.utils import ContextLoggerMixin, LoggerMixin, SingleTaskWorker, retry_on
 from pycdp import cdp
 
 
 T = t.TypeVar('T')
+
+
+class AsyncIOEventLoop(IEventLoop):
+
+    async def sleep(self, delay: float) -> None:
+        await asyncio.sleep(delay)
+
+loop = AsyncIOEventLoop()
 
 
 _CLOSE_SENTINEL = object
@@ -214,7 +223,7 @@ class CDPConnection(CDPBase, SingleTaskWorker):
 
     @retry_on(
         ClientConnectorError, asyncio.TimeoutError,
-        retries=10, delay=3.0, delay_growth=1.3, log_errors=True
+        retries=10, delay=3.0, delay_growth=1.3, log_errors=True, loop=loop
     )
     async def connect(self):
         if self._ws is not None: raise RuntimeError('already connected')
@@ -366,7 +375,7 @@ class CDPSession(CDPBase, ContextLoggerMixin):
         self.close_listeners()
 
 
-@retry_on(ClientConnectionError, ServerDisconnectedError, retries=10, delay=3.0, delay_growth=1.3, log_errors=True)
+@retry_on(ClientConnectionError, ServerDisconnectedError, retries=10, delay=3.0, delay_growth=1.3, log_errors=True, loop=loop)
 async def connect_cdp(url: str) -> CDPConnection:
     '''
     Connect to the browser specified by debugging ``url``.

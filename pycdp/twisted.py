@@ -3,16 +3,31 @@ import itertools
 import typing as t
 from collections import defaultdict
 from contextlib import asynccontextmanager
+from twisted.internet import reactor
 from twisted.internet.error import ConnectionRefusedError
 from twisted.web.client import Agent, Response, readBody
 from twisted.internet.defer import DeferredQueue, QueueOverflow, Deferred, CancelledError
 from autobahn.twisted.websocket import WebSocketClientProtocol, WebSocketClientFactory
 from pycdp.exceptions import *
+from pycdp.base import IEventLoop
 from pycdp.utils import ContextLoggerMixin, LoggerMixin, retry_on
 from pycdp import cdp
 
 
 T = t.TypeVar('T')
+
+
+class TwistedEventLoop(IEventLoop):
+
+    def __init__(self, reactor):
+        self._reactor = reactor
+
+    async def sleep(self, delay: float):
+        sleep = Deferred()
+        self._reactor.callLater(delay, sleep.callback, None)
+        await sleep
+
+loop = TwistedEventLoop(reactor)
 
 
 _CLOSE_SENTINEL = object
@@ -223,7 +238,7 @@ class CDPConnection(CDPBase):
     def had_normal_closure(self) -> bool:
         return not self._ws.remoteCloseCode or (self._ws.closedByMe and self._ws.localCloseCode == 1000)
 
-    @retry_on(ConnectionRefusedError, retries=10, delay=1.0, log_errors=True)
+    @retry_on(ConnectionRefusedError, retries=10, delay=1.0, log_errors=True, loop=loop)
     async def connect(self):
         if self._ws is not None: raise RuntimeError('already connected')
         if self._wsurl is None:

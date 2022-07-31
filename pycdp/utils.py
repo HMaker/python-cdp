@@ -6,6 +6,7 @@ import logging
 import functools
 import typing as t
 from types import SimpleNamespace, TracebackType
+from pycdp.base import IEventLoop
 
 
 _T = t.TypeVar('_T')
@@ -46,6 +47,7 @@ class Retry(LoggerMixin):
     def __init__(self,
         func,
         exception_class: t.Collection[BaseException],
+        loop: IEventLoop,
         *,
         retries: int = 1,
         on_error: t.Union[str, t.Callable[[], t.Awaitable[None]]] = None,
@@ -54,6 +56,7 @@ class Retry(LoggerMixin):
         super().__init__()
         self._func = func
         self._errors = exception_class
+        self._loop = loop
         self._retries = retries
         self._log_errors = log_errors
         self._on_error_cb = on_error
@@ -121,7 +124,7 @@ class DelayedRetry(Retry):
         await super()._on_error(instance, context)
         delay = self._get_delay(context)
         if delay > 0.0:
-            await asyncio.sleep(delay)
+            await self._loop.sleep(delay)
         self._grow_delay(context)
 
     def _create_call_context(self):
@@ -146,19 +149,27 @@ class RandomDelayedRetry(DelayedRetry):
 
 def retry_on(
     *exception_class: t.Type[BaseException],
+    loop: IEventLoop,
     retries: int = 1,
     delay: t.Union[float, t.Tuple[float, float]] = 0.0,
     delay_growth: float = 1.0,
     max_delay: int = 600,
     log_errors: bool = False,
-    on_error: str = None
+    on_error: str = None,
 ):
     if not isinstance(delay, (float, tuple)):
         raise TypeError('delay must be a float or a tuple of 2 floats')
     def deco_factory(func):
         if type(delay) is float:
             if delay <= 0.0:
-                decorator = Retry(func, exception_class, retries=retries, log_errors=log_errors, on_error=on_error)
+                decorator = Retry(
+                    func,
+                    exception_class,
+                    retries=retries,
+                    log_errors=log_errors,
+                    on_error=on_error,
+                    loop=loop
+                )
             else:
                 decorator = DelayedRetry(
                     delay,
@@ -168,7 +179,8 @@ def retry_on(
                     exception_class=exception_class,
                     retries=retries,
                     log_errors=log_errors,
-                    on_error=on_error
+                    on_error=on_error,
+                    loop=loop
                 )
         else:
             decorator = RandomDelayedRetry(
@@ -179,7 +191,8 @@ def retry_on(
                 exception_class=exception_class,
                 retries=retries,
                 log_errors=log_errors,
-                on_error=on_error
+                on_error=on_error,
+                loop=loop
             )
         @functools.wraps(func)
         async def func_wrapper(*args, **kwargs):
@@ -209,7 +222,6 @@ class Closable(LoggerMixin):
 
     async def close(self):
         if self._closed:
-            await asyncio.sleep(0)
             return
         elif self._closing:
             await self._close_event.wait()
