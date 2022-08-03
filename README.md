@@ -32,7 +32,7 @@ from pycdp.asyncio import connect_cdp
 
 async def main():
     chrome = ChromeLauncher(
-        binary='/usr/bin/google-chrome' # linux path
+        binary='/usr/bin/google-chrome', # linux path
         args=['--remote-debugging-port=9222', '--incognito']
     )
     # ChromeLauncher.launch() is blocking, run it on a background thread
