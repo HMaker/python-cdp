@@ -1,6 +1,7 @@
 import os
 import signal
 import shutil
+import warnings
 import tempfile
 import subprocess
 import typing as t
@@ -109,6 +110,13 @@ class BrowserLauncher(LoggerMixin):
                 self._logfile.close()
             if not self._keep_profile:
                 shutil.rmtree(self._profile, ignore_errors=True)
+
+    def __del__(self):
+        warnings.warn("The chrome instance was not closed properly with chrome.kill(); issuing SIGKILL.")
+        if os.name == 'posix':
+            os.killpg(os.getpgid(self._process.pid), signal.SIGKILL)
+        else:
+            self._process.kill()
 
     def _build_launch_cmdline(self) -> t.List[str]:
         raise NotImplementedError
