@@ -11,3 +11,4 @@ __pycache__
 /.tool-versions
 /test_*
 /*.log
+.idea

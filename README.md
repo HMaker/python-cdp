@@ -114,7 +114,13 @@ Example:
 ```sh
 cdpgen --browser-protocol browser_protocol.json --js-protocol js_protocol.json --output /tmp/cdp
 ```
-You can then include the `/tmp/cdp` package in your project and import it like the builtin CDP types.
+You can then include the `/tmp/cdp` package in your project and import it like the builtin CDP types.  
+
+Here you can find script that automatically downloads latest protocol files and generates python types
+```shell
+chmod +x update-cdp.sh
+./update-cdp.sh
+```
 
 ## Implementation of a CDP client
 The `pycdp.cdp` package follows same structure of CDP domains, each domain is Python module and each command a function in that module.
