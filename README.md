@@ -109,7 +109,7 @@ cdpgen --browser-protocol browser_protocol.json --js-protocol js_protocol.json -
 You can then include the `/tmp/cdp` package in your project and import it like the builtin CDP types.
 
 ## Implementation of a CDP client
-The `pycdp.cdp` package follows same structure of CDP domains, each domain is Python module and each command a function in that module.
+The `pycdp.cdp` package follows same structure of CDP domains, each domain is a Python module and each command a function in that module.
 
 Each function is a generator with a single yield which is a Python dict, on the CDP wire format,
 containing the message that should be sent to the browser, on resumption the generator receives the message from browser:

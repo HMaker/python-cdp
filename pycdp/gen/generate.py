@@ -2,6 +2,7 @@ import re
 import os
 import json
 import typing
+import shutil
 import builtins
 import logging
 import operator
@@ -1074,6 +1075,7 @@ def cdpgen():
     for domain in domains:
         logger.info('Generating module: %s → %s/%s.py', domain.domain, output, domain.module)
         (output / f'{domain.module}.py').write_text(domain.generate_code())
+    shutil.copyfile(Path(__file__).parent.parent / 'cdp' / 'util.py', output / 'util.py')
     generate_init(output / '__init__.py', domains)
     (output / 'README.md').write_text(GENERATED_PACKAGE_NOTICE)
     (output / 'py.typed').touch()
