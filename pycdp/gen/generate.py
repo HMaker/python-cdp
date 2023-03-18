@@ -1020,14 +1020,10 @@ def selfgen():
         with module_path.open('w') as module_file:
             module_file.write(domain.generate_code())
 
-    init_path = output_path / '__init__.py'
-    generate_init(init_path, domains)
-
-    docs_path = here.parent / 'docs' / 'api'
-    generate_docs(docs_path, domains)
-
-    py_typed_path = output_path / 'py.typed'
-    py_typed_path.touch()
+    generate_init(output_path / '__init__.py', domains)
+    generate_docs(here.parent / 'docs' / 'api', domains)
+    (output_path / 'README.md').write_text(GENERATED_PACKAGE_NOTICE)
+    (output_path / 'py.typed').touch()
 
 
 def cdpgen():
