@@ -8,12 +8,6 @@ sending JSON messages over a WebSocket. That JSON format is described by a
 machine-readable specification. This specification is used to automatically
 generate the classes and methods found in this library.
 
-You could write a CDP client by connecting a WebSocket and then sending JSON
-objects, but this would be tedious and error-prone: the Python interpreter would
-not catch any typos in your JSON objects, and you wouldn't get autocomplete for
-any parts of the JSON data structure. By providing a set of native Python
-wrappers, this project makes it easier and faster to write CDP client code.
-
 ## Installation
 You can install this library as a dependency on your project with:
 ```
@@ -92,9 +86,7 @@ d.addCallback(lambda *args: reactor.stop())
 reactor.run()
 ```
 
-where chrome debugger is listening on `http://localhost:9222` (started by `google-chrome --remote-debugging-port=9222`).
-
-You also can use just the builtin CDP types with `import pycdp.cdp` on your own client implementation. If you want to try a different CDP version you can build new type wrappers with `cdpgen` command:
+You also can use just the builtin CDP type wrappers with `import pycdp.cdp` on your own client implementation. If you want to try a different CDP version you can build new type wrappers with `cdpgen` command:
 ```
 usage: cdpgen <arguments>
 
@@ -108,7 +100,7 @@ optional arguments:
                         JSON file for the javascript protocol
   --output OUTPUT       output path for the generated Python modules
 
-JSON files for the CDP spec can be found at https://github.com/ChromeDevTools/devtools-protocol
+JSON files for the CDP spec can be found at https://github.com/ChromeDevTools/devtools-protocol/tree/master/json
 ```
 Example:
 ```sh
@@ -142,7 +134,7 @@ For implementation details check out the [docs][3].
 PyCDP is licensed under the MIT License.
 <hr>
 
-[1]: https://github.com/ChromeDevTools/devtools-protocol/
+[1]: https://chromedevtools.github.io/devtools-protocol/
 [2]: https://github.com/ChromeDevTools/devtools-protocol/tree/1b1e643d77dacc9568b5acc1efdeaec19c048a27
 [3]: docs/getting_started.rst
 [4]: https://github.com/hyperiongray/trio-chrome-devtools-protocol
