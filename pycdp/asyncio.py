@@ -4,7 +4,7 @@ import asyncio
 import itertools
 import typing as t
 from collections import defaultdict
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 from aiohttp import ClientSession
 from aiohttp.client import ClientWebSocketResponse
 from aiohttp.http_websocket import WSMsgType, WSCloseCode
@@ -118,7 +118,7 @@ class CDPBase(LoggerMixin):
         return receiver.__aiter__()
 
     @asynccontextmanager
-    async def wait_for(self, event_type: t.Type[T], buffer_size=100) -> t.AsyncGenerator[T, None]:
+    async def wait_for(self, event_type: t.Type[T]) -> t.AsyncGenerator[T, None]:
         '''
         Wait for an event of the given type and return it.
 
@@ -126,9 +126,29 @@ class CDPBase(LoggerMixin):
         with block. The block will not exit until the indicated event is
         received.
         '''
-        async for event in self.listen(event_type, buffer_size):
+        async for event in self.listen(event_type, buffer_size=2):
             yield event
             return
+
+    @contextmanager
+    def safe_wait_for(self, event_type: t.Type[T]) -> t.Generator[t.Awaitable[T], None]:
+        """
+        Wait for an asynchronous event. This context manager yields a awaitable that should be
+        awaited to receive the event.
+        
+        Use this context manager to register an event listener before performing the action which will
+        trigger the event like a page navigation, it avoids the race conditions of wait_for().
+        """
+        aevent = asyncio.create_task(self._async_wait_for(event_type))
+        try:
+            yield aevent
+        finally:
+            if not aevent.done():
+                aevent.cancel()
+
+    async def _async_wait_for(self, event_type: t.Type[T]) -> T:
+        async for event in self.listen(event_type, buffer_size=2):
+            return event
 
     def close_listeners(self):
         for listener in itertools.chain.from_iterable(self._listeners.values()):

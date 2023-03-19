@@ -35,13 +35,14 @@ async def main():
     target_id = await conn.execute(cdp.target.create_target('about:blank'))
     target_session = await conn.connect_session(target_id)
     await target_session.execute(cdp.page.enable())
-    await target_session.execute(cdp.page.navigate('https://chromedevtools.github.io/devtools-protocol/'))
     # you may use "async for target_session.listen()" to listen multiple events, here we listen just a single event.
-    async with target_session.wait_for(cdp.page.DomContentEventFired):
-        dom = await target_session.execute(cdp.dom.get_document())
-        node = await target_session.execute(cdp.dom.query_selector(dom.node_id, 'p'))
-        js_node = await target_session.execute(cdp.dom.resolve_node(node))
-        print((await target_session.execute(cdp.runtime.call_function_on('function() {return this.innerText;}', js_node.object_id, return_by_value=True)))[0].value)
+    with target_session.safe_wait_for(cdp.page.DomContentEventFired) as navigation:
+        await target_session.execute(cdp.page.navigate('https://chromedevtools.github.io/devtools-protocol/'))
+        await navigation
+    dom = await target_session.execute(cdp.dom.get_document())
+    node = await target_session.execute(cdp.dom.query_selector(dom.node_id, 'p'))
+    js_node = await target_session.execute(cdp.dom.resolve_node(node))
+    print((await target_session.execute(cdp.runtime.call_function_on('function() {return this.innerText;}', js_node.object_id, return_by_value=True)))[0].value)
     await target_session.execute(cdp.page.close())
     await conn.close()
     await asyncio.get_running_loop().run_in_executor(None, chrome.kill)
