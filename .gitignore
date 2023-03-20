@@ -12,3 +12,4 @@ __pycache__
 /test_*
 /*.log
 .idea
+.DS_Store
