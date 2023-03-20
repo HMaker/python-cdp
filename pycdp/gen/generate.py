@@ -2,6 +2,7 @@ import re
 import os
 import json
 import typing
+import shutil
 import builtins
 import logging
 import operator
@@ -1019,14 +1020,10 @@ def selfgen():
         with module_path.open('w') as module_file:
             module_file.write(domain.generate_code())
 
-    init_path = output_path / '__init__.py'
-    generate_init(init_path, domains)
-
-    docs_path = here.parent / 'docs' / 'api'
-    generate_docs(docs_path, domains)
-
-    py_typed_path = output_path / 'py.typed'
-    py_typed_path.touch()
+    generate_init(output_path / '__init__.py', domains)
+    generate_docs(here.parent / 'docs' / 'api', domains)
+    (output_path / 'README.md').write_text(GENERATED_PACKAGE_NOTICE)
+    (output_path / 'py.typed').touch()
 
 
 def cdpgen():
@@ -1038,7 +1035,7 @@ def cdpgen():
     parser = ArgumentParser(
         usage='%(prog)s <arguments>',
         description='Generate Python types for the Chrome Devtools Protocol (CDP) specification.',
-        epilog='JSON files for the CDP spec can be found at https://github.com/ChromeDevTools/devtools-protocol'
+        epilog='JSON files for the CDP spec can be found at https://github.com/ChromeDevTools/devtools-protocol/tree/master/json'
     )
     parser.add_argument(
         '--browser-protocol',
@@ -1074,6 +1071,7 @@ def cdpgen():
     for domain in domains:
         logger.info('Generating module: %s → %s/%s.py', domain.domain, output, domain.module)
         (output / f'{domain.module}.py').write_text(domain.generate_code())
+    shutil.copyfile(Path(__file__).parent.parent / 'cdp' / 'util.py', output / 'util.py')
     generate_init(output / '__init__.py', domains)
     (output / 'README.md').write_text(GENERATED_PACKAGE_NOTICE)
     (output / 'py.typed').touch()

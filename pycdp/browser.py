@@ -1,3 +1,4 @@
+import warnings
 import os
 import signal
 import shutil
@@ -124,6 +125,10 @@ class BrowserLauncher(LoggerMixin):
 
     def _configure_profile(self):
         pass
+
+    def __del__(self):
+        if self._process is not None:
+            warnings.warn('A BrowserLauncher instance has not closed with .kill(), it will leak')
 
 
 class ChromeLauncher(BrowserLauncher):

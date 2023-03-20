@@ -8,12 +8,6 @@ sending JSON messages over a WebSocket. That JSON format is described by a
 machine-readable specification. This specification is used to automatically
 generate the classes and methods found in this library.
 
-You could write a CDP client by connecting a WebSocket and then sending JSON
-objects, but this would be tedious and error-prone: the Python interpreter would
-not catch any typos in your JSON objects, and you wouldn't get autocomplete for
-any parts of the JSON data structure. By providing a set of native Python
-wrappers, this project makes it easier and faster to write CDP client code.
-
 ## Installation
 You can install this library as a dependency on your project with:
 ```
@@ -41,13 +35,14 @@ async def main():
     target_id = await conn.execute(cdp.target.create_target('about:blank'))
     target_session = await conn.connect_session(target_id)
     await target_session.execute(cdp.page.enable())
-    await target_session.execute(cdp.page.navigate('https://chromedevtools.github.io/devtools-protocol/'))
     # you may use "async for target_session.listen()" to listen multiple events, here we listen just a single event.
-    async with target_session.wait_for(cdp.page.DomContentEventFired):
-        dom = await target_session.execute(cdp.dom.get_document())
-        node = await target_session.execute(cdp.dom.query_selector(dom.node_id, 'p'))
-        js_node = await target_session.execute(cdp.dom.resolve_node(node))
-        print((await target_session.execute(cdp.runtime.call_function_on('function() {return this.innerText;}', js_node.object_id, return_by_value=True)))[0].value)
+    with target_session.safe_wait_for(cdp.page.DomContentEventFired) as navigation:
+        await target_session.execute(cdp.page.navigate('https://chromedevtools.github.io/devtools-protocol/'))
+        await navigation
+    dom = await target_session.execute(cdp.dom.get_document())
+    node = await target_session.execute(cdp.dom.query_selector(dom.node_id, 'p'))
+    js_node = await target_session.execute(cdp.dom.resolve_node(node))
+    print((await target_session.execute(cdp.runtime.call_function_on('function() {return this.innerText;}', js_node.object_id, return_by_value=True)))[0].value)
     await target_session.execute(cdp.page.close())
     await conn.close()
     await asyncio.get_running_loop().run_in_executor(None, chrome.kill)
@@ -92,9 +87,7 @@ d.addCallback(lambda *args: reactor.stop())
 reactor.run()
 ```
 
-where chrome debugger is listening on `http://localhost:9222` (started by `google-chrome --remote-debugging-port=9222`).
-
-You also can use just the builtin CDP types with `import pycdp.cdp` on your own client implementation. If you want to try a different CDP version you can build new type wrappers with `cdpgen` command:
+You also can use just the builtin CDP type wrappers with `import pycdp.cdp` on your own client implementation. If you want to try a different CDP version you can build new type wrappers with `cdpgen` command:
 ```
 usage: cdpgen <arguments>
 
@@ -108,7 +101,7 @@ optional arguments:
                         JSON file for the javascript protocol
   --output OUTPUT       output path for the generated Python modules
 
-JSON files for the CDP spec can be found at https://github.com/ChromeDevTools/devtools-protocol
+JSON files for the CDP spec can be found at https://github.com/ChromeDevTools/devtools-protocol/tree/master/json
 ```
 Example:
 ```sh
@@ -123,7 +116,7 @@ chmod +x update-cdp.sh
 ```
 
 ## Implementation of a CDP client
-The `pycdp.cdp` package follows same structure of CDP domains, each domain is Python module and each command a function in that module.
+The `pycdp.cdp` package follows same structure of CDP domains, each domain is a Python module and each command a function in that module.
 
 Each function is a generator with a single yield which is a Python dict, on the CDP wire format,
 containing the message that should be sent to the browser, on resumption the generator receives the message from browser:
@@ -148,7 +141,7 @@ For implementation details check out the [docs][3].
 PyCDP is licensed under the MIT License.
 <hr>
 
-[1]: https://github.com/ChromeDevTools/devtools-protocol/
+[1]: https://chromedevtools.github.io/devtools-protocol/
 [2]: https://github.com/ChromeDevTools/devtools-protocol/tree/1b1e643d77dacc9568b5acc1efdeaec19c048a27
 [3]: docs/getting_started.rst
 [4]: https://github.com/hyperiongray/trio-chrome-devtools-protocol
