@@ -77,15 +77,15 @@ class TouchPoint:
         return cls(
             x=float(json['x']),
             y=float(json['y']),
-            radius_x=float(json['radiusX']) if 'radiusX' in json else None,
-            radius_y=float(json['radiusY']) if 'radiusY' in json else None,
-            rotation_angle=float(json['rotationAngle']) if 'rotationAngle' in json else None,
-            force=float(json['force']) if 'force' in json else None,
-            tangential_pressure=float(json['tangentialPressure']) if 'tangentialPressure' in json else None,
-            tilt_x=int(json['tiltX']) if 'tiltX' in json else None,
-            tilt_y=int(json['tiltY']) if 'tiltY' in json else None,
-            twist=int(json['twist']) if 'twist' in json else None,
-            id_=float(json['id']) if 'id' in json else None,
+            radius_x=float(json['radiusX']) if json.get('radiusX', None) is not None else None,
+            radius_y=float(json['radiusY']) if json.get('radiusY', None) is not None else None,
+            rotation_angle=float(json['rotationAngle']) if json.get('rotationAngle', None) is not None else None,
+            force=float(json['force']) if json.get('force', None) is not None else None,
+            tangential_pressure=float(json['tangentialPressure']) if json.get('tangentialPressure', None) is not None else None,
+            tilt_x=int(json['tiltX']) if json.get('tiltX', None) is not None else None,
+            tilt_y=int(json['tiltY']) if json.get('tiltY', None) is not None else None,
+            twist=int(json['twist']) if json.get('twist', None) is not None else None,
+            id_=float(json['id']) if json.get('id', None) is not None else None,
         )
 
 
@@ -164,8 +164,8 @@ class DragDataItem:
         return cls(
             mime_type=str(json['mimeType']),
             data=str(json['data']),
-            title=str(json['title']) if 'title' in json else None,
-            base_url=str(json['baseURL']) if 'baseURL' in json else None,
+            title=str(json['title']) if json.get('title', None) is not None else None,
+            base_url=str(json['baseURL']) if json.get('baseURL', None) is not None else None,
         )
 
 
@@ -192,7 +192,7 @@ class DragData:
         return cls(
             items=[DragDataItem.from_json(i) for i in json['items']],
             drag_operations_mask=int(json['dragOperationsMask']),
-            files=[str(i) for i in json['files']] if 'files' in json else None,
+            files=[str(i) for i in json['files']] if json.get('files', None) is not None else None,
         )
 
 

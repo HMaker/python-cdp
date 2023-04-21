@@ -160,14 +160,14 @@ class AXValueSource:
     def from_json(cls, json: T_JSON_DICT) -> AXValueSource:
         return cls(
             type_=AXValueSourceType.from_json(json['type']),
-            value=AXValue.from_json(json['value']) if 'value' in json else None,
-            attribute=str(json['attribute']) if 'attribute' in json else None,
-            attribute_value=AXValue.from_json(json['attributeValue']) if 'attributeValue' in json else None,
-            superseded=bool(json['superseded']) if 'superseded' in json else None,
-            native_source=AXValueNativeSourceType.from_json(json['nativeSource']) if 'nativeSource' in json else None,
-            native_source_value=AXValue.from_json(json['nativeSourceValue']) if 'nativeSourceValue' in json else None,
-            invalid=bool(json['invalid']) if 'invalid' in json else None,
-            invalid_reason=str(json['invalidReason']) if 'invalidReason' in json else None,
+            value=AXValue.from_json(json['value']) if json.get('value', None) is not None else None,
+            attribute=str(json['attribute']) if json.get('attribute', None) is not None else None,
+            attribute_value=AXValue.from_json(json['attributeValue']) if json.get('attributeValue', None) is not None else None,
+            superseded=bool(json['superseded']) if json.get('superseded', None) is not None else None,
+            native_source=AXValueNativeSourceType.from_json(json['nativeSource']) if json.get('nativeSource', None) is not None else None,
+            native_source_value=AXValue.from_json(json['nativeSourceValue']) if json.get('nativeSourceValue', None) is not None else None,
+            invalid=bool(json['invalid']) if json.get('invalid', None) is not None else None,
+            invalid_reason=str(json['invalidReason']) if json.get('invalidReason', None) is not None else None,
         )
 
 
@@ -195,8 +195,8 @@ class AXRelatedNode:
     def from_json(cls, json: T_JSON_DICT) -> AXRelatedNode:
         return cls(
             backend_dom_node_id=dom.BackendNodeId.from_json(json['backendDOMNodeId']),
-            idref=str(json['idref']) if 'idref' in json else None,
-            text=str(json['text']) if 'text' in json else None,
+            idref=str(json['idref']) if json.get('idref', None) is not None else None,
+            text=str(json['text']) if json.get('text', None) is not None else None,
         )
 
 
@@ -254,9 +254,9 @@ class AXValue:
     def from_json(cls, json: T_JSON_DICT) -> AXValue:
         return cls(
             type_=AXValueType.from_json(json['type']),
-            value=json['value'] if 'value' in json else None,
-            related_nodes=[AXRelatedNode.from_json(i) for i in json['relatedNodes']] if 'relatedNodes' in json else None,
-            sources=[AXValueSource.from_json(i) for i in json['sources']] if 'sources' in json else None,
+            value=json['value'] if json.get('value', None) is not None else None,
+            related_nodes=[AXRelatedNode.from_json(i) for i in json['relatedNodes']] if json.get('relatedNodes', None) is not None else None,
+            sources=[AXValueSource.from_json(i) for i in json['sources']] if json.get('sources', None) is not None else None,
         )
 
 
@@ -334,6 +334,9 @@ class AXNode:
     #: This ``Node``'s role, whether explicit or implicit.
     role: typing.Optional[AXValue] = None
 
+    #: This ``Node``'s Chrome raw role.
+    chrome_role: typing.Optional[AXValue] = None
+
     #: The accessible name for this ``Node``.
     name: typing.Optional[AXValue] = None
 
@@ -366,6 +369,8 @@ class AXNode:
             json['ignoredReasons'] = [i.to_json() for i in self.ignored_reasons]
         if self.role is not None:
             json['role'] = self.role.to_json()
+        if self.chrome_role is not None:
+            json['chromeRole'] = self.chrome_role.to_json()
         if self.name is not None:
             json['name'] = self.name.to_json()
         if self.description is not None:
@@ -389,16 +394,17 @@ class AXNode:
         return cls(
             node_id=AXNodeId.from_json(json['nodeId']),
             ignored=bool(json['ignored']),
-            ignored_reasons=[AXProperty.from_json(i) for i in json['ignoredReasons']] if 'ignoredReasons' in json else None,
-            role=AXValue.from_json(json['role']) if 'role' in json else None,
-            name=AXValue.from_json(json['name']) if 'name' in json else None,
-            description=AXValue.from_json(json['description']) if 'description' in json else None,
-            value=AXValue.from_json(json['value']) if 'value' in json else None,
-            properties=[AXProperty.from_json(i) for i in json['properties']] if 'properties' in json else None,
-            parent_id=AXNodeId.from_json(json['parentId']) if 'parentId' in json else None,
-            child_ids=[AXNodeId.from_json(i) for i in json['childIds']] if 'childIds' in json else None,
-            backend_dom_node_id=dom.BackendNodeId.from_json(json['backendDOMNodeId']) if 'backendDOMNodeId' in json else None,
-            frame_id=page.FrameId.from_json(json['frameId']) if 'frameId' in json else None,
+            ignored_reasons=[AXProperty.from_json(i) for i in json['ignoredReasons']] if json.get('ignoredReasons', None) is not None else None,
+            role=AXValue.from_json(json['role']) if json.get('role', None) is not None else None,
+            chrome_role=AXValue.from_json(json['chromeRole']) if json.get('chromeRole', None) is not None else None,
+            name=AXValue.from_json(json['name']) if json.get('name', None) is not None else None,
+            description=AXValue.from_json(json['description']) if json.get('description', None) is not None else None,
+            value=AXValue.from_json(json['value']) if json.get('value', None) is not None else None,
+            properties=[AXProperty.from_json(i) for i in json['properties']] if json.get('properties', None) is not None else None,
+            parent_id=AXNodeId.from_json(json['parentId']) if json.get('parentId', None) is not None else None,
+            child_ids=[AXNodeId.from_json(i) for i in json['childIds']] if json.get('childIds', None) is not None else None,
+            backend_dom_node_id=dom.BackendNodeId.from_json(json['backendDOMNodeId']) if json.get('backendDOMNodeId', None) is not None else None,
+            frame_id=page.FrameId.from_json(json['frameId']) if json.get('frameId', None) is not None else None,
         )
 
 
@@ -437,7 +443,7 @@ def get_partial_ax_tree(
     :param node_id: *(Optional)* Identifier of the node to get the partial accessibility tree for.
     :param backend_node_id: *(Optional)* Identifier of the backend node to get the partial accessibility tree for.
     :param object_id: *(Optional)* JavaScript object id of the node wrapper to get the partial accessibility tree for.
-    :param fetch_relatives: *(Optional)* Whether to fetch this nodes ancestors, siblings and children. Defaults to true.
+    :param fetch_relatives: *(Optional)* Whether to fetch this node's ancestors, siblings and children. Defaults to true.
     :returns: The ``Accessibility.AXNode`` for this DOM node, if it exists, plus its ancestors, siblings and children, if requested.
     '''
     params: T_JSON_DICT = dict()
@@ -459,7 +465,6 @@ def get_partial_ax_tree(
 
 def get_full_ax_tree(
         depth: typing.Optional[int] = None,
-        max_depth: typing.Optional[int] = None,
         frame_id: typing.Optional[page.FrameId] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.List[AXNode]]:
     '''
@@ -468,15 +473,12 @@ def get_full_ax_tree(
     **EXPERIMENTAL**
 
     :param depth: *(Optional)* The maximum depth at which descendants of the root node should be retrieved. If omitted, the full tree is returned.
-    :param max_depth: **(DEPRECATED)** *(Optional)* Deprecated. This parameter has been renamed to ```depth```. If depth is not provided, max_depth will be used.
     :param frame_id: *(Optional)* The frame for whose document the AX tree should be retrieved. If omited, the root frame is used.
     :returns: 
     '''
     params: T_JSON_DICT = dict()
     if depth is not None:
         params['depth'] = depth
-    if max_depth is not None:
-        params['max_depth'] = max_depth
     if frame_id is not None:
         params['frameId'] = frame_id.to_json()
     cmd_dict: T_JSON_DICT = {

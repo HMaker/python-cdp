@@ -93,11 +93,11 @@ class Bounds:
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> Bounds:
         return cls(
-            left=int(json['left']) if 'left' in json else None,
-            top=int(json['top']) if 'top' in json else None,
-            width=int(json['width']) if 'width' in json else None,
-            height=int(json['height']) if 'height' in json else None,
-            window_state=WindowState.from_json(json['windowState']) if 'windowState' in json else None,
+            left=int(json['left']) if json.get('left', None) is not None else None,
+            top=int(json['top']) if json.get('top', None) is not None else None,
+            width=int(json['width']) if json.get('width', None) is not None else None,
+            height=int(json['height']) if json.get('height', None) is not None else None,
+            window_state=WindowState.from_json(json['windowState']) if json.get('windowState', None) is not None else None,
         )
 
 
@@ -112,6 +112,8 @@ class PermissionType(enum.Enum):
     DURABLE_STORAGE = "durableStorage"
     FLASH = "flash"
     GEOLOCATION = "geolocation"
+    IDLE_DETECTION = "idleDetection"
+    LOCAL_FONTS = "localFonts"
     MIDI = "midi"
     MIDI_SYSEX = "midiSysex"
     NFC = "nfc"
@@ -120,11 +122,13 @@ class PermissionType(enum.Enum):
     PERIODIC_BACKGROUND_SYNC = "periodicBackgroundSync"
     PROTECTED_MEDIA_IDENTIFIER = "protectedMediaIdentifier"
     SENSORS = "sensors"
+    STORAGE_ACCESS = "storageAccess"
+    TOP_LEVEL_STORAGE_ACCESS = "topLevelStorageAccess"
     VIDEO_CAPTURE = "videoCapture"
     VIDEO_CAPTURE_PAN_TILT_ZOOM = "videoCapturePanTiltZoom"
-    IDLE_DETECTION = "idleDetection"
     WAKE_LOCK_SCREEN = "wakeLockScreen"
     WAKE_LOCK_SYSTEM = "wakeLockSystem"
+    WINDOW_MANAGEMENT = "windowManagement"
 
     def to_json(self) -> str:
         return self.value
@@ -187,10 +191,10 @@ class PermissionDescriptor:
     def from_json(cls, json: T_JSON_DICT) -> PermissionDescriptor:
         return cls(
             name=str(json['name']),
-            sysex=bool(json['sysex']) if 'sysex' in json else None,
-            user_visible_only=bool(json['userVisibleOnly']) if 'userVisibleOnly' in json else None,
-            allow_without_sanitization=bool(json['allowWithoutSanitization']) if 'allowWithoutSanitization' in json else None,
-            pan_tilt_zoom=bool(json['panTiltZoom']) if 'panTiltZoom' in json else None,
+            sysex=bool(json['sysex']) if json.get('sysex', None) is not None else None,
+            user_visible_only=bool(json['userVisibleOnly']) if json.get('userVisibleOnly', None) is not None else None,
+            allow_without_sanitization=bool(json['allowWithoutSanitization']) if json.get('allowWithoutSanitization', None) is not None else None,
+            pan_tilt_zoom=bool(json['panTiltZoom']) if json.get('panTiltZoom', None) is not None else None,
         )
 
 
@@ -490,7 +494,7 @@ def get_histograms(
     **EXPERIMENTAL**
 
     :param query: *(Optional)* Requested substring in name. Only histograms which have query as a substring in their name are extracted. An empty or absent query returns all histograms.
-    :param delta: *(Optional)* If true, retrieve delta since last call.
+    :param delta: *(Optional)* If true, retrieve delta since last delta call.
     :returns: Histograms.
     '''
     params: T_JSON_DICT = dict()
@@ -516,7 +520,7 @@ def get_histogram(
     **EXPERIMENTAL**
 
     :param name: Requested histogram name.
-    :param delta: *(Optional)* If true, retrieve delta since last call.
+    :param delta: *(Optional)* If true, retrieve delta since last delta call.
     :returns: Histogram.
     '''
     params: T_JSON_DICT = dict()

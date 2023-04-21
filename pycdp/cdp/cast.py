@@ -35,7 +35,7 @@ class Sink:
         return cls(
             name=str(json['name']),
             id_=str(json['id']),
-            session=str(json['session']) if 'session' in json else None,
+            session=str(json['session']) if json.get('session', None) is not None else None,
         )
 
 

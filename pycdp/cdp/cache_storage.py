@@ -112,6 +112,9 @@ class Cache:
     #: Security origin of the cache.
     security_origin: str
 
+    #: Storage key of the cache.
+    storage_key: str
+
     #: The name of the cache.
     cache_name: str
 
@@ -119,6 +122,7 @@ class Cache:
         json: T_JSON_DICT = dict()
         json['cacheId'] = self.cache_id.to_json()
         json['securityOrigin'] = self.security_origin
+        json['storageKey'] = self.storage_key
         json['cacheName'] = self.cache_name
         return json
 
@@ -127,6 +131,7 @@ class Cache:
         return cls(
             cache_id=CacheId.from_json(json['cacheId']),
             security_origin=str(json['securityOrigin']),
+            storage_key=str(json['storageKey']),
             cache_name=str(json['cacheName']),
         )
 
@@ -209,16 +214,21 @@ def delete_entry(
 
 
 def request_cache_names(
-        security_origin: str
+        security_origin: typing.Optional[str] = None,
+        storage_key: typing.Optional[str] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.List[Cache]]:
     '''
     Requests cache names.
 
-    :param security_origin: Security origin.
+    :param security_origin: *(Optional)* At least and at most one of securityOrigin, storageKey must be specified. Security origin.
+    :param storage_key: *(Optional)* Storage key.
     :returns: Caches for the security origin.
     '''
     params: T_JSON_DICT = dict()
-    params['securityOrigin'] = security_origin
+    if security_origin is not None:
+        params['securityOrigin'] = security_origin
+    if storage_key is not None:
+        params['storageKey'] = storage_key
     cmd_dict: T_JSON_DICT = {
         'method': 'CacheStorage.requestCacheNames',
         'params': params,

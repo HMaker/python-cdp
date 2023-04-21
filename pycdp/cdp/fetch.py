@@ -73,9 +73,9 @@ class RequestPattern:
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> RequestPattern:
         return cls(
-            url_pattern=str(json['urlPattern']) if 'urlPattern' in json else None,
-            resource_type=network.ResourceType.from_json(json['resourceType']) if 'resourceType' in json else None,
-            request_stage=RequestStage.from_json(json['requestStage']) if 'requestStage' in json else None,
+            url_pattern=str(json['urlPattern']) if json.get('urlPattern', None) is not None else None,
+            resource_type=network.ResourceType.from_json(json['resourceType']) if json.get('resourceType', None) is not None else None,
+            request_stage=RequestStage.from_json(json['requestStage']) if json.get('requestStage', None) is not None else None,
         )
 
 
@@ -134,7 +134,7 @@ class AuthChallenge:
             origin=str(json['origin']),
             scheme=str(json['scheme']),
             realm=str(json['realm']),
-            source=str(json['source']) if 'source' in json else None,
+            source=str(json['source']) if json.get('source', None) is not None else None,
         )
 
 
@@ -169,8 +169,8 @@ class AuthChallengeResponse:
     def from_json(cls, json: T_JSON_DICT) -> AuthChallengeResponse:
         return cls(
             response=str(json['response']),
-            username=str(json['username']) if 'username' in json else None,
-            password=str(json['password']) if 'password' in json else None,
+            username=str(json['username']) if json.get('username', None) is not None else None,
+            password=str(json['password']) if json.get('password', None) is not None else None,
         )
 
 
@@ -278,7 +278,7 @@ def continue_request(
     :param url: *(Optional)* If set, the request url will be modified in a way that's not observable by page.
     :param method: *(Optional)* If set, the request method is overridden.
     :param post_data: *(Optional)* If set, overrides the post data in the request. (Encoded as a base64 string when passed over JSON)
-    :param headers: *(Optional)* If set, overrides the request headers.
+    :param headers: *(Optional)* If set, overrides the request headers. Note that the overrides do not extend to subsequent redirect hops, if a redirect happens. Another override may be applied to a different request produced by a redirect.
     :param intercept_response: **(EXPERIMENTAL)** *(Optional)* If set, overrides response interception behavior for this request.
     '''
     params: T_JSON_DICT = dict()
@@ -444,7 +444,10 @@ class RequestPaused:
     response_headers: typing.Optional[typing.List[HeaderEntry]]
     #: If the intercepted request had a corresponding Network.requestWillBeSent event fired for it,
     #: then this networkId will be the same as the requestId present in the requestWillBeSent event.
-    network_id: typing.Optional[RequestId]
+    network_id: typing.Optional[network.RequestId]
+    #: If the request is due to a redirect response from the server, the id of the request that
+    #: has caused the redirect.
+    redirected_request_id: typing.Optional[RequestId]
 
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> RequestPaused:
@@ -453,11 +456,12 @@ class RequestPaused:
             request=network.Request.from_json(json['request']),
             frame_id=page.FrameId.from_json(json['frameId']),
             resource_type=network.ResourceType.from_json(json['resourceType']),
-            response_error_reason=network.ErrorReason.from_json(json['responseErrorReason']) if 'responseErrorReason' in json else None,
-            response_status_code=int(json['responseStatusCode']) if 'responseStatusCode' in json else None,
-            response_status_text=str(json['responseStatusText']) if 'responseStatusText' in json else None,
-            response_headers=[HeaderEntry.from_json(i) for i in json['responseHeaders']] if 'responseHeaders' in json else None,
-            network_id=RequestId.from_json(json['networkId']) if 'networkId' in json else None
+            response_error_reason=network.ErrorReason.from_json(json['responseErrorReason']) if json.get('responseErrorReason', None) is not None else None,
+            response_status_code=int(json['responseStatusCode']) if json.get('responseStatusCode', None) is not None else None,
+            response_status_text=str(json['responseStatusText']) if json.get('responseStatusText', None) is not None else None,
+            response_headers=[HeaderEntry.from_json(i) for i in json['responseHeaders']] if json.get('responseHeaders', None) is not None else None,
+            network_id=network.RequestId.from_json(json['networkId']) if json.get('networkId', None) is not None else None,
+            redirected_request_id=RequestId.from_json(json['redirectedRequestId']) if json.get('redirectedRequestId', None) is not None else None
         )
 
 

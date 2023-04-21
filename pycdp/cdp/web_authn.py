@@ -93,6 +93,11 @@ class VirtualAuthenticatorOptions:
     #: Defaults to false.
     has_min_pin_length: typing.Optional[bool] = None
 
+    #: If set to true, the authenticator will support the prf extension.
+    #: https://w3c.github.io/webauthn/#prf-extension
+    #: Defaults to false.
+    has_prf: typing.Optional[bool] = None
+
     #: If set to true, tests of user presence will succeed immediately.
     #: Otherwise, they will not be resolved. Defaults to true.
     automatic_presence_simulation: typing.Optional[bool] = None
@@ -117,6 +122,8 @@ class VirtualAuthenticatorOptions:
             json['hasCredBlob'] = self.has_cred_blob
         if self.has_min_pin_length is not None:
             json['hasMinPinLength'] = self.has_min_pin_length
+        if self.has_prf is not None:
+            json['hasPrf'] = self.has_prf
         if self.automatic_presence_simulation is not None:
             json['automaticPresenceSimulation'] = self.automatic_presence_simulation
         if self.is_user_verified is not None:
@@ -128,14 +135,15 @@ class VirtualAuthenticatorOptions:
         return cls(
             protocol=AuthenticatorProtocol.from_json(json['protocol']),
             transport=AuthenticatorTransport.from_json(json['transport']),
-            ctap2_version=Ctap2Version.from_json(json['ctap2Version']) if 'ctap2Version' in json else None,
-            has_resident_key=bool(json['hasResidentKey']) if 'hasResidentKey' in json else None,
-            has_user_verification=bool(json['hasUserVerification']) if 'hasUserVerification' in json else None,
-            has_large_blob=bool(json['hasLargeBlob']) if 'hasLargeBlob' in json else None,
-            has_cred_blob=bool(json['hasCredBlob']) if 'hasCredBlob' in json else None,
-            has_min_pin_length=bool(json['hasMinPinLength']) if 'hasMinPinLength' in json else None,
-            automatic_presence_simulation=bool(json['automaticPresenceSimulation']) if 'automaticPresenceSimulation' in json else None,
-            is_user_verified=bool(json['isUserVerified']) if 'isUserVerified' in json else None,
+            ctap2_version=Ctap2Version.from_json(json['ctap2Version']) if json.get('ctap2Version', None) is not None else None,
+            has_resident_key=bool(json['hasResidentKey']) if json.get('hasResidentKey', None) is not None else None,
+            has_user_verification=bool(json['hasUserVerification']) if json.get('hasUserVerification', None) is not None else None,
+            has_large_blob=bool(json['hasLargeBlob']) if json.get('hasLargeBlob', None) is not None else None,
+            has_cred_blob=bool(json['hasCredBlob']) if json.get('hasCredBlob', None) is not None else None,
+            has_min_pin_length=bool(json['hasMinPinLength']) if json.get('hasMinPinLength', None) is not None else None,
+            has_prf=bool(json['hasPrf']) if json.get('hasPrf', None) is not None else None,
+            automatic_presence_simulation=bool(json['automaticPresenceSimulation']) if json.get('automaticPresenceSimulation', None) is not None else None,
+            is_user_verified=bool(json['isUserVerified']) if json.get('isUserVerified', None) is not None else None,
         )
 
 
@@ -186,19 +194,27 @@ class Credential:
             is_resident_credential=bool(json['isResidentCredential']),
             private_key=str(json['privateKey']),
             sign_count=int(json['signCount']),
-            rp_id=str(json['rpId']) if 'rpId' in json else None,
-            user_handle=str(json['userHandle']) if 'userHandle' in json else None,
-            large_blob=str(json['largeBlob']) if 'largeBlob' in json else None,
+            rp_id=str(json['rpId']) if json.get('rpId', None) is not None else None,
+            user_handle=str(json['userHandle']) if json.get('userHandle', None) is not None else None,
+            large_blob=str(json['largeBlob']) if json.get('largeBlob', None) is not None else None,
         )
 
 
-def enable() -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+def enable(
+        enable_ui: typing.Optional[bool] = None
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
     '''
     Enable the WebAuthn domain and start intercepting credential storage and
     retrieval with a virtual authenticator.
+
+    :param enable_ui: *(Optional)* Whether to enable the WebAuthn user interface. Enabling the UI is recommended for debugging and demo purposes, as it is closer to the real experience. Disabling the UI is recommended for automated testing. Supported at the embedder's discretion if UI is available. Defaults to false.
     '''
+    params: T_JSON_DICT = dict()
+    if enable_ui is not None:
+        params['enableUI'] = enable_ui
     cmd_dict: T_JSON_DICT = {
         'method': 'WebAuthn.enable',
+        'params': params,
     }
     json = yield cmd_dict
 
@@ -230,6 +246,35 @@ def add_virtual_authenticator(
     }
     json = yield cmd_dict
     return AuthenticatorId.from_json(json['authenticatorId'])
+
+
+def set_response_override_bits(
+        authenticator_id: AuthenticatorId,
+        is_bogus_signature: typing.Optional[bool] = None,
+        is_bad_uv: typing.Optional[bool] = None,
+        is_bad_up: typing.Optional[bool] = None
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Resets parameters isBogusSignature, isBadUV, isBadUP to false if they are not present.
+
+    :param authenticator_id:
+    :param is_bogus_signature: *(Optional)* If isBogusSignature is set, overrides the signature in the authenticator response to be zero. Defaults to false.
+    :param is_bad_uv: *(Optional)* If isBadUV is set, overrides the UV bit in the flags in the authenticator response to be zero. Defaults to false.
+    :param is_bad_up: *(Optional)* If isBadUP is set, overrides the UP bit in the flags in the authenticator response to be zero. Defaults to false.
+    '''
+    params: T_JSON_DICT = dict()
+    params['authenticatorId'] = authenticator_id.to_json()
+    if is_bogus_signature is not None:
+        params['isBogusSignature'] = is_bogus_signature
+    if is_bad_uv is not None:
+        params['isBadUV'] = is_bad_uv
+    if is_bad_up is not None:
+        params['isBadUP'] = is_bad_up
+    cmd_dict: T_JSON_DICT = {
+        'method': 'WebAuthn.setResponseOverrideBits',
+        'params': params,
+    }
+    json = yield cmd_dict
 
 
 def remove_virtual_authenticator(
@@ -388,3 +433,37 @@ def set_automatic_presence_simulation(
         'params': params,
     }
     json = yield cmd_dict
+
+
+@event_class('WebAuthn.credentialAdded')
+@dataclass
+class CredentialAdded:
+    '''
+    Triggered when a credential is added to an authenticator.
+    '''
+    authenticator_id: AuthenticatorId
+    credential: Credential
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> CredentialAdded:
+        return cls(
+            authenticator_id=AuthenticatorId.from_json(json['authenticatorId']),
+            credential=Credential.from_json(json['credential'])
+        )
+
+
+@event_class('WebAuthn.credentialAsserted')
+@dataclass
+class CredentialAsserted:
+    '''
+    Triggered when a credential is used in a webauthn assertion.
+    '''
+    authenticator_id: AuthenticatorId
+    credential: Credential
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> CredentialAsserted:
+        return cls(
+            authenticator_id=AuthenticatorId.from_json(json['authenticatorId']),
+            credential=Credential.from_json(json['credential'])
+        )

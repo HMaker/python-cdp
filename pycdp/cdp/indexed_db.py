@@ -152,10 +152,10 @@ class Key:
     def from_json(cls, json: T_JSON_DICT) -> Key:
         return cls(
             type_=str(json['type']),
-            number=float(json['number']) if 'number' in json else None,
-            string=str(json['string']) if 'string' in json else None,
-            date=float(json['date']) if 'date' in json else None,
-            array=[Key.from_json(i) for i in json['array']] if 'array' in json else None,
+            number=float(json['number']) if json.get('number', None) is not None else None,
+            string=str(json['string']) if json.get('string', None) is not None else None,
+            date=float(json['date']) if json.get('date', None) is not None else None,
+            array=[Key.from_json(i) for i in json['array']] if json.get('array', None) is not None else None,
         )
 
 
@@ -191,8 +191,8 @@ class KeyRange:
         return cls(
             lower_open=bool(json['lowerOpen']),
             upper_open=bool(json['upperOpen']),
-            lower=Key.from_json(json['lower']) if 'lower' in json else None,
-            upper=Key.from_json(json['upper']) if 'upper' in json else None,
+            lower=Key.from_json(json['lower']) if json.get('lower', None) is not None else None,
+            upper=Key.from_json(json['upper']) if json.get('upper', None) is not None else None,
         )
 
 
@@ -253,25 +253,30 @@ class KeyPath:
     def from_json(cls, json: T_JSON_DICT) -> KeyPath:
         return cls(
             type_=str(json['type']),
-            string=str(json['string']) if 'string' in json else None,
-            array=[str(i) for i in json['array']] if 'array' in json else None,
+            string=str(json['string']) if json.get('string', None) is not None else None,
+            array=[str(i) for i in json['array']] if json.get('array', None) is not None else None,
         )
 
 
 def clear_object_store(
-        security_origin: str,
         database_name: str,
-        object_store_name: str
+        object_store_name: str,
+        security_origin: typing.Optional[str] = None,
+        storage_key: typing.Optional[str] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
     '''
     Clears all entries from an object store.
 
-    :param security_origin: Security origin.
+    :param security_origin: *(Optional)* At least and at most one of securityOrigin, storageKey must be specified. Security origin.
+    :param storage_key: *(Optional)* Storage key.
     :param database_name: Database name.
     :param object_store_name: Object store name.
     '''
     params: T_JSON_DICT = dict()
-    params['securityOrigin'] = security_origin
+    if security_origin is not None:
+        params['securityOrigin'] = security_origin
+    if storage_key is not None:
+        params['storageKey'] = storage_key
     params['databaseName'] = database_name
     params['objectStoreName'] = object_store_name
     cmd_dict: T_JSON_DICT = {
@@ -282,17 +287,22 @@ def clear_object_store(
 
 
 def delete_database(
-        security_origin: str,
-        database_name: str
+        database_name: str,
+        security_origin: typing.Optional[str] = None,
+        storage_key: typing.Optional[str] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
     '''
     Deletes a database.
 
-    :param security_origin: Security origin.
+    :param security_origin: *(Optional)* At least and at most one of securityOrigin, storageKey must be specified. Security origin.
+    :param storage_key: *(Optional)* Storage key.
     :param database_name: Database name.
     '''
     params: T_JSON_DICT = dict()
-    params['securityOrigin'] = security_origin
+    if security_origin is not None:
+        params['securityOrigin'] = security_origin
+    if storage_key is not None:
+        params['storageKey'] = storage_key
     params['databaseName'] = database_name
     cmd_dict: T_JSON_DICT = {
         'method': 'IndexedDB.deleteDatabase',
@@ -302,21 +312,26 @@ def delete_database(
 
 
 def delete_object_store_entries(
-        security_origin: str,
         database_name: str,
         object_store_name: str,
-        key_range: KeyRange
+        key_range: KeyRange,
+        security_origin: typing.Optional[str] = None,
+        storage_key: typing.Optional[str] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
     '''
     Delete a range of entries from an object store
 
-    :param security_origin:
+    :param security_origin: *(Optional)* At least and at most one of securityOrigin, storageKey must be specified. Security origin.
+    :param storage_key: *(Optional)* Storage key.
     :param database_name:
     :param object_store_name:
     :param key_range: Range of entry keys to delete
     '''
     params: T_JSON_DICT = dict()
-    params['securityOrigin'] = security_origin
+    if security_origin is not None:
+        params['securityOrigin'] = security_origin
+    if storage_key is not None:
+        params['storageKey'] = storage_key
     params['databaseName'] = database_name
     params['objectStoreName'] = object_store_name
     params['keyRange'] = key_range.to_json()
@@ -348,18 +363,20 @@ def enable() -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
 
 
 def request_data(
-        security_origin: str,
         database_name: str,
         object_store_name: str,
         index_name: str,
         skip_count: int,
         page_size: int,
+        security_origin: typing.Optional[str] = None,
+        storage_key: typing.Optional[str] = None,
         key_range: typing.Optional[KeyRange] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.Tuple[typing.List[DataEntry], bool]]:
     '''
     Requests data from object store or index.
 
-    :param security_origin: Security origin.
+    :param security_origin: *(Optional)* At least and at most one of securityOrigin, storageKey must be specified. Security origin.
+    :param storage_key: *(Optional)* Storage key.
     :param database_name: Database name.
     :param object_store_name: Object store name.
     :param index_name: Index name, empty string for object store data requests.
@@ -372,7 +389,10 @@ def request_data(
         1. **hasMore** - If true, there are more entries to fetch in the given range.
     '''
     params: T_JSON_DICT = dict()
-    params['securityOrigin'] = security_origin
+    if security_origin is not None:
+        params['securityOrigin'] = security_origin
+    if storage_key is not None:
+        params['storageKey'] = storage_key
     params['databaseName'] = database_name
     params['objectStoreName'] = object_store_name
     params['indexName'] = index_name
@@ -392,14 +412,16 @@ def request_data(
 
 
 def get_metadata(
-        security_origin: str,
         database_name: str,
-        object_store_name: str
+        object_store_name: str,
+        security_origin: typing.Optional[str] = None,
+        storage_key: typing.Optional[str] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.Tuple[float, float]]:
     '''
-    Gets metadata of an object store
+    Gets metadata of an object store.
 
-    :param security_origin: Security origin.
+    :param security_origin: *(Optional)* At least and at most one of securityOrigin, storageKey must be specified. Security origin.
+    :param storage_key: *(Optional)* Storage key.
     :param database_name: Database name.
     :param object_store_name: Object store name.
     :returns: A tuple with the following items:
@@ -408,7 +430,10 @@ def get_metadata(
         1. **keyGeneratorValue** - the current value of key generator, to become the next inserted key into the object store. Valid if objectStore.autoIncrement is true.
     '''
     params: T_JSON_DICT = dict()
-    params['securityOrigin'] = security_origin
+    if security_origin is not None:
+        params['securityOrigin'] = security_origin
+    if storage_key is not None:
+        params['storageKey'] = storage_key
     params['databaseName'] = database_name
     params['objectStoreName'] = object_store_name
     cmd_dict: T_JSON_DICT = {
@@ -423,18 +448,23 @@ def get_metadata(
 
 
 def request_database(
-        security_origin: str,
-        database_name: str
+        database_name: str,
+        security_origin: typing.Optional[str] = None,
+        storage_key: typing.Optional[str] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,DatabaseWithObjectStores]:
     '''
     Requests database with given name in given frame.
 
-    :param security_origin: Security origin.
+    :param security_origin: *(Optional)* At least and at most one of securityOrigin, storageKey must be specified. Security origin.
+    :param storage_key: *(Optional)* Storage key.
     :param database_name: Database name.
     :returns: Database with an array of object stores.
     '''
     params: T_JSON_DICT = dict()
-    params['securityOrigin'] = security_origin
+    if security_origin is not None:
+        params['securityOrigin'] = security_origin
+    if storage_key is not None:
+        params['storageKey'] = storage_key
     params['databaseName'] = database_name
     cmd_dict: T_JSON_DICT = {
         'method': 'IndexedDB.requestDatabase',
@@ -445,16 +475,21 @@ def request_database(
 
 
 def request_database_names(
-        security_origin: str
+        security_origin: typing.Optional[str] = None,
+        storage_key: typing.Optional[str] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.List[str]]:
     '''
     Requests database names for given security origin.
 
-    :param security_origin: Security origin.
+    :param security_origin: *(Optional)* At least and at most one of securityOrigin, storageKey must be specified. Security origin.
+    :param storage_key: *(Optional)* Storage key.
     :returns: Database names for origin.
     '''
     params: T_JSON_DICT = dict()
-    params['securityOrigin'] = security_origin
+    if security_origin is not None:
+        params['securityOrigin'] = security_origin
+    if storage_key is not None:
+        params['storageKey'] = storage_key
     cmd_dict: T_JSON_DICT = {
         'method': 'IndexedDB.requestDatabaseNames',
         'params': params,

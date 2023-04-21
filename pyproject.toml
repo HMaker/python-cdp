@@ -21,7 +21,7 @@ authors = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.8, <3.11"
 deprecated = "1.2.9"
 inflection = "0.4.0"
 aiohttp = "3.8.1"

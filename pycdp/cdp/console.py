@@ -54,9 +54,9 @@ class ConsoleMessage:
             source=str(json['source']),
             level=str(json['level']),
             text=str(json['text']),
-            url=str(json['url']) if 'url' in json else None,
-            line=int(json['line']) if 'line' in json else None,
-            column=int(json['column']) if 'column' in json else None,
+            url=str(json['url']) if json.get('url', None) is not None else None,
+            line=int(json['line']) if json.get('line', None) is not None else None,
+            column=int(json['column']) if json.get('column', None) is not None else None,
         )
 
 

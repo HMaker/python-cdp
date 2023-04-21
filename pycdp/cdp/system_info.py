@@ -64,8 +64,8 @@ class GPUDevice:
             device_string=str(json['deviceString']),
             driver_vendor=str(json['driverVendor']),
             driver_version=str(json['driverVersion']),
-            sub_sys_id=float(json['subSysId']) if 'subSysId' in json else None,
-            revision=float(json['revision']) if 'revision' in json else None,
+            sub_sys_id=float(json['subSysId']) if json.get('subSysId', None) is not None else None,
+            revision=float(json['revision']) if json.get('revision', None) is not None else None,
         )
 
 
@@ -277,8 +277,8 @@ class GPUInfo:
             video_decoding=[VideoDecodeAcceleratorCapability.from_json(i) for i in json['videoDecoding']],
             video_encoding=[VideoEncodeAcceleratorCapability.from_json(i) for i in json['videoEncoding']],
             image_decoding=[ImageDecodeAcceleratorCapability.from_json(i) for i in json['imageDecoding']],
-            aux_attributes=dict(json['auxAttributes']) if 'auxAttributes' in json else None,
-            feature_status=dict(json['featureStatus']) if 'featureStatus' in json else None,
+            aux_attributes=dict(json['auxAttributes']) if json.get('auxAttributes', None) is not None else None,
+            feature_status=dict(json['featureStatus']) if json.get('featureStatus', None) is not None else None,
         )
 
 
@@ -334,6 +334,25 @@ def get_info() -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.Tuple[GPUInfo,
         str(json['modelVersion']),
         str(json['commandLine'])
     )
+
+
+def get_feature_state(
+        feature_state: str
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,bool]:
+    '''
+    Returns information about the feature state.
+
+    :param feature_state:
+    :returns: 
+    '''
+    params: T_JSON_DICT = dict()
+    params['featureState'] = feature_state
+    cmd_dict: T_JSON_DICT = {
+        'method': 'SystemInfo.getFeatureState',
+        'params': params,
+    }
+    json = yield cmd_dict
+    return bool(json['featureEnabled'])
 
 
 def get_process_info() -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.List[ProcessInfo]]:

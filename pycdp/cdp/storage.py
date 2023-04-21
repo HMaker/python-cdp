@@ -13,6 +13,19 @@ from .util import event_class, T_JSON_DICT
 
 from . import browser
 from . import network
+from . import page
+
+
+class SerializedStorageKey(str):
+    def to_json(self) -> str:
+        return self
+
+    @classmethod
+    def from_json(cls, json: str) -> SerializedStorageKey:
+        return cls(json)
+
+    def __repr__(self):
+        return 'SerializedStorageKey({})'.format(super().__repr__())
 
 
 class StorageType(enum.Enum):
@@ -29,6 +42,8 @@ class StorageType(enum.Enum):
     SERVICE_WORKERS = "service_workers"
     CACHE_STORAGE = "cache_storage"
     INTEREST_GROUPS = "interest_groups"
+    SHARED_STORAGE = "shared_storage"
+    STORAGE_BUCKETS = "storage_buckets"
     ALL_ = "all"
     OTHER = "other"
 
@@ -96,6 +111,7 @@ class InterestGroupAccessType(enum.Enum):
     JOIN = "join"
     LEAVE = "leave"
     UPDATE = "update"
+    LOADED = "loaded"
     BID = "bid"
     WIN = "win"
 
@@ -127,7 +143,7 @@ class InterestGroupAd:
     def from_json(cls, json: T_JSON_DICT) -> InterestGroupAd:
         return cls(
             render_url=str(json['renderUrl']),
-            metadata=str(json['metadata']) if 'metadata' in json else None,
+            metadata=str(json['metadata']) if json.get('metadata', None) is not None else None,
         )
 
 
@@ -191,12 +207,292 @@ class InterestGroupDetails:
             trusted_bidding_signals_keys=[str(i) for i in json['trustedBiddingSignalsKeys']],
             ads=[InterestGroupAd.from_json(i) for i in json['ads']],
             ad_components=[InterestGroupAd.from_json(i) for i in json['adComponents']],
-            bidding_url=str(json['biddingUrl']) if 'biddingUrl' in json else None,
-            bidding_wasm_helper_url=str(json['biddingWasmHelperUrl']) if 'biddingWasmHelperUrl' in json else None,
-            update_url=str(json['updateUrl']) if 'updateUrl' in json else None,
-            trusted_bidding_signals_url=str(json['trustedBiddingSignalsUrl']) if 'trustedBiddingSignalsUrl' in json else None,
-            user_bidding_signals=str(json['userBiddingSignals']) if 'userBiddingSignals' in json else None,
+            bidding_url=str(json['biddingUrl']) if json.get('biddingUrl', None) is not None else None,
+            bidding_wasm_helper_url=str(json['biddingWasmHelperUrl']) if json.get('biddingWasmHelperUrl', None) is not None else None,
+            update_url=str(json['updateUrl']) if json.get('updateUrl', None) is not None else None,
+            trusted_bidding_signals_url=str(json['trustedBiddingSignalsUrl']) if json.get('trustedBiddingSignalsUrl', None) is not None else None,
+            user_bidding_signals=str(json['userBiddingSignals']) if json.get('userBiddingSignals', None) is not None else None,
         )
+
+
+class SharedStorageAccessType(enum.Enum):
+    '''
+    Enum of shared storage access types.
+    '''
+    DOCUMENT_ADD_MODULE = "documentAddModule"
+    DOCUMENT_SELECT_URL = "documentSelectURL"
+    DOCUMENT_RUN = "documentRun"
+    DOCUMENT_SET = "documentSet"
+    DOCUMENT_APPEND = "documentAppend"
+    DOCUMENT_DELETE = "documentDelete"
+    DOCUMENT_CLEAR = "documentClear"
+    WORKLET_SET = "workletSet"
+    WORKLET_APPEND = "workletAppend"
+    WORKLET_DELETE = "workletDelete"
+    WORKLET_CLEAR = "workletClear"
+    WORKLET_GET = "workletGet"
+    WORKLET_KEYS = "workletKeys"
+    WORKLET_ENTRIES = "workletEntries"
+    WORKLET_LENGTH = "workletLength"
+    WORKLET_REMAINING_BUDGET = "workletRemainingBudget"
+
+    def to_json(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_json(cls, json: str) -> SharedStorageAccessType:
+        return cls(json)
+
+
+@dataclass
+class SharedStorageEntry:
+    '''
+    Struct for a single key-value pair in an origin's shared storage.
+    '''
+    key: str
+
+    value: str
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['key'] = self.key
+        json['value'] = self.value
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> SharedStorageEntry:
+        return cls(
+            key=str(json['key']),
+            value=str(json['value']),
+        )
+
+
+@dataclass
+class SharedStorageMetadata:
+    '''
+    Details for an origin's shared storage.
+    '''
+    creation_time: network.TimeSinceEpoch
+
+    length: int
+
+    remaining_budget: float
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['creationTime'] = self.creation_time.to_json()
+        json['length'] = self.length
+        json['remainingBudget'] = self.remaining_budget
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> SharedStorageMetadata:
+        return cls(
+            creation_time=network.TimeSinceEpoch.from_json(json['creationTime']),
+            length=int(json['length']),
+            remaining_budget=float(json['remainingBudget']),
+        )
+
+
+@dataclass
+class SharedStorageReportingMetadata:
+    '''
+    Pair of reporting metadata details for a candidate URL for ``selectURL()``.
+    '''
+    event_type: str
+
+    reporting_url: str
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['eventType'] = self.event_type
+        json['reportingUrl'] = self.reporting_url
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> SharedStorageReportingMetadata:
+        return cls(
+            event_type=str(json['eventType']),
+            reporting_url=str(json['reportingUrl']),
+        )
+
+
+@dataclass
+class SharedStorageUrlWithMetadata:
+    '''
+    Bundles a candidate URL with its reporting metadata.
+    '''
+    #: Spec of candidate URL.
+    url: str
+
+    #: Any associated reporting metadata.
+    reporting_metadata: typing.List[SharedStorageReportingMetadata]
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['url'] = self.url
+        json['reportingMetadata'] = [i.to_json() for i in self.reporting_metadata]
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> SharedStorageUrlWithMetadata:
+        return cls(
+            url=str(json['url']),
+            reporting_metadata=[SharedStorageReportingMetadata.from_json(i) for i in json['reportingMetadata']],
+        )
+
+
+@dataclass
+class SharedStorageAccessParams:
+    '''
+    Bundles the parameters for shared storage access events whose
+    presence/absence can vary according to SharedStorageAccessType.
+    '''
+    #: Spec of the module script URL.
+    #: Present only for SharedStorageAccessType.documentAddModule.
+    script_source_url: typing.Optional[str] = None
+
+    #: Name of the registered operation to be run.
+    #: Present only for SharedStorageAccessType.documentRun and
+    #: SharedStorageAccessType.documentSelectURL.
+    operation_name: typing.Optional[str] = None
+
+    #: The operation's serialized data in bytes (converted to a string).
+    #: Present only for SharedStorageAccessType.documentRun and
+    #: SharedStorageAccessType.documentSelectURL.
+    serialized_data: typing.Optional[str] = None
+
+    #: Array of candidate URLs' specs, along with any associated metadata.
+    #: Present only for SharedStorageAccessType.documentSelectURL.
+    urls_with_metadata: typing.Optional[typing.List[SharedStorageUrlWithMetadata]] = None
+
+    #: Key for a specific entry in an origin's shared storage.
+    #: Present only for SharedStorageAccessType.documentSet,
+    #: SharedStorageAccessType.documentAppend,
+    #: SharedStorageAccessType.documentDelete,
+    #: SharedStorageAccessType.workletSet,
+    #: SharedStorageAccessType.workletAppend,
+    #: SharedStorageAccessType.workletDelete, and
+    #: SharedStorageAccessType.workletGet.
+    key: typing.Optional[str] = None
+
+    #: Value for a specific entry in an origin's shared storage.
+    #: Present only for SharedStorageAccessType.documentSet,
+    #: SharedStorageAccessType.documentAppend,
+    #: SharedStorageAccessType.workletSet, and
+    #: SharedStorageAccessType.workletAppend.
+    value: typing.Optional[str] = None
+
+    #: Whether or not to set an entry for a key if that key is already present.
+    #: Present only for SharedStorageAccessType.documentSet and
+    #: SharedStorageAccessType.workletSet.
+    ignore_if_present: typing.Optional[bool] = None
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        if self.script_source_url is not None:
+            json['scriptSourceUrl'] = self.script_source_url
+        if self.operation_name is not None:
+            json['operationName'] = self.operation_name
+        if self.serialized_data is not None:
+            json['serializedData'] = self.serialized_data
+        if self.urls_with_metadata is not None:
+            json['urlsWithMetadata'] = [i.to_json() for i in self.urls_with_metadata]
+        if self.key is not None:
+            json['key'] = self.key
+        if self.value is not None:
+            json['value'] = self.value
+        if self.ignore_if_present is not None:
+            json['ignoreIfPresent'] = self.ignore_if_present
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> SharedStorageAccessParams:
+        return cls(
+            script_source_url=str(json['scriptSourceUrl']) if json.get('scriptSourceUrl', None) is not None else None,
+            operation_name=str(json['operationName']) if json.get('operationName', None) is not None else None,
+            serialized_data=str(json['serializedData']) if json.get('serializedData', None) is not None else None,
+            urls_with_metadata=[SharedStorageUrlWithMetadata.from_json(i) for i in json['urlsWithMetadata']] if json.get('urlsWithMetadata', None) is not None else None,
+            key=str(json['key']) if json.get('key', None) is not None else None,
+            value=str(json['value']) if json.get('value', None) is not None else None,
+            ignore_if_present=bool(json['ignoreIfPresent']) if json.get('ignoreIfPresent', None) is not None else None,
+        )
+
+
+class StorageBucketsDurability(enum.Enum):
+    RELAXED = "relaxed"
+    STRICT = "strict"
+
+    def to_json(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_json(cls, json: str) -> StorageBucketsDurability:
+        return cls(json)
+
+
+@dataclass
+class StorageBucketInfo:
+    storage_key: SerializedStorageKey
+
+    id_: str
+
+    name: str
+
+    is_default: bool
+
+    expiration: network.TimeSinceEpoch
+
+    #: Storage quota (bytes).
+    quota: float
+
+    persistent: bool
+
+    durability: StorageBucketsDurability
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['storageKey'] = self.storage_key.to_json()
+        json['id'] = self.id_
+        json['name'] = self.name
+        json['isDefault'] = self.is_default
+        json['expiration'] = self.expiration.to_json()
+        json['quota'] = self.quota
+        json['persistent'] = self.persistent
+        json['durability'] = self.durability.to_json()
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> StorageBucketInfo:
+        return cls(
+            storage_key=SerializedStorageKey.from_json(json['storageKey']),
+            id_=str(json['id']),
+            name=str(json['name']),
+            is_default=bool(json['isDefault']),
+            expiration=network.TimeSinceEpoch.from_json(json['expiration']),
+            quota=float(json['quota']),
+            persistent=bool(json['persistent']),
+            durability=StorageBucketsDurability.from_json(json['durability']),
+        )
+
+
+def get_storage_key_for_frame(
+        frame_id: page.FrameId
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,SerializedStorageKey]:
+    '''
+    Returns a storage key given a frame id.
+
+    :param frame_id:
+    :returns: 
+    '''
+    params: T_JSON_DICT = dict()
+    params['frameId'] = frame_id.to_json()
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Storage.getStorageKeyForFrame',
+        'params': params,
+    }
+    json = yield cmd_dict
+    return SerializedStorageKey.from_json(json['storageKey'])
 
 
 def clear_data_for_origin(
@@ -214,6 +510,26 @@ def clear_data_for_origin(
     params['storageTypes'] = storage_types
     cmd_dict: T_JSON_DICT = {
         'method': 'Storage.clearDataForOrigin',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def clear_data_for_storage_key(
+        storage_key: str,
+        storage_types: str
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Clears storage for storage key.
+
+    :param storage_key: Storage key.
+    :param storage_types: Comma separated list of StorageType to clear.
+    '''
+    params: T_JSON_DICT = dict()
+    params['storageKey'] = storage_key
+    params['storageTypes'] = storage_types
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Storage.clearDataForStorageKey',
         'params': params,
     }
     json = yield cmd_dict
@@ -347,6 +663,23 @@ def track_cache_storage_for_origin(
     json = yield cmd_dict
 
 
+def track_cache_storage_for_storage_key(
+        storage_key: str
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Registers storage key to be notified when an update occurs to its cache storage list.
+
+    :param storage_key: Storage key.
+    '''
+    params: T_JSON_DICT = dict()
+    params['storageKey'] = storage_key
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Storage.trackCacheStorageForStorageKey',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
 def track_indexed_db_for_origin(
         origin: str
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
@@ -359,6 +692,23 @@ def track_indexed_db_for_origin(
     params['origin'] = origin
     cmd_dict: T_JSON_DICT = {
         'method': 'Storage.trackIndexedDBForOrigin',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def track_indexed_db_for_storage_key(
+        storage_key: str
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Registers storage key to be notified when an update occurs to its IndexedDB.
+
+    :param storage_key: Storage key.
+    '''
+    params: T_JSON_DICT = dict()
+    params['storageKey'] = storage_key
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Storage.trackIndexedDBForStorageKey',
         'params': params,
     }
     json = yield cmd_dict
@@ -381,6 +731,23 @@ def untrack_cache_storage_for_origin(
     json = yield cmd_dict
 
 
+def untrack_cache_storage_for_storage_key(
+        storage_key: str
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Unregisters storage key from receiving notifications for cache storage.
+
+    :param storage_key: Storage key.
+    '''
+    params: T_JSON_DICT = dict()
+    params['storageKey'] = storage_key
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Storage.untrackCacheStorageForStorageKey',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
 def untrack_indexed_db_for_origin(
         origin: str
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
@@ -393,6 +760,23 @@ def untrack_indexed_db_for_origin(
     params['origin'] = origin
     cmd_dict: T_JSON_DICT = {
         'method': 'Storage.untrackIndexedDBForOrigin',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def untrack_indexed_db_for_storage_key(
+        storage_key: str
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Unregisters storage key from receiving notifications for IndexedDB.
+
+    :param storage_key: Storage key.
+    '''
+    params: T_JSON_DICT = dict()
+    params['storageKey'] = storage_key
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Storage.untrackIndexedDBForStorageKey',
         'params': params,
     }
     json = yield cmd_dict
@@ -479,6 +863,200 @@ def set_interest_group_tracking(
     json = yield cmd_dict
 
 
+def get_shared_storage_metadata(
+        owner_origin: str
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,SharedStorageMetadata]:
+    '''
+    Gets metadata for an origin's shared storage.
+
+    **EXPERIMENTAL**
+
+    :param owner_origin:
+    :returns: 
+    '''
+    params: T_JSON_DICT = dict()
+    params['ownerOrigin'] = owner_origin
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Storage.getSharedStorageMetadata',
+        'params': params,
+    }
+    json = yield cmd_dict
+    return SharedStorageMetadata.from_json(json['metadata'])
+
+
+def get_shared_storage_entries(
+        owner_origin: str
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.List[SharedStorageEntry]]:
+    '''
+    Gets the entries in an given origin's shared storage.
+
+    **EXPERIMENTAL**
+
+    :param owner_origin:
+    :returns: 
+    '''
+    params: T_JSON_DICT = dict()
+    params['ownerOrigin'] = owner_origin
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Storage.getSharedStorageEntries',
+        'params': params,
+    }
+    json = yield cmd_dict
+    return [SharedStorageEntry.from_json(i) for i in json['entries']]
+
+
+def set_shared_storage_entry(
+        owner_origin: str,
+        key: str,
+        value: str,
+        ignore_if_present: typing.Optional[bool] = None
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Sets entry with ``key`` and ``value`` for a given origin's shared storage.
+
+    **EXPERIMENTAL**
+
+    :param owner_origin:
+    :param key:
+    :param value:
+    :param ignore_if_present: *(Optional)* If ```ignoreIfPresent```` is included and true, then only sets the entry if ````key``` doesn't already exist.
+    '''
+    params: T_JSON_DICT = dict()
+    params['ownerOrigin'] = owner_origin
+    params['key'] = key
+    params['value'] = value
+    if ignore_if_present is not None:
+        params['ignoreIfPresent'] = ignore_if_present
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Storage.setSharedStorageEntry',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def delete_shared_storage_entry(
+        owner_origin: str,
+        key: str
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Deletes entry for ``key`` (if it exists) for a given origin's shared storage.
+
+    **EXPERIMENTAL**
+
+    :param owner_origin:
+    :param key:
+    '''
+    params: T_JSON_DICT = dict()
+    params['ownerOrigin'] = owner_origin
+    params['key'] = key
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Storage.deleteSharedStorageEntry',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def clear_shared_storage_entries(
+        owner_origin: str
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Clears all entries for a given origin's shared storage.
+
+    **EXPERIMENTAL**
+
+    :param owner_origin:
+    '''
+    params: T_JSON_DICT = dict()
+    params['ownerOrigin'] = owner_origin
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Storage.clearSharedStorageEntries',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def reset_shared_storage_budget(
+        owner_origin: str
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Resets the budget for ``ownerOrigin`` by clearing all budget withdrawals.
+
+    **EXPERIMENTAL**
+
+    :param owner_origin:
+    '''
+    params: T_JSON_DICT = dict()
+    params['ownerOrigin'] = owner_origin
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Storage.resetSharedStorageBudget',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def set_shared_storage_tracking(
+        enable: bool
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Enables/disables issuing of sharedStorageAccessed events.
+
+    **EXPERIMENTAL**
+
+    :param enable:
+    '''
+    params: T_JSON_DICT = dict()
+    params['enable'] = enable
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Storage.setSharedStorageTracking',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def set_storage_bucket_tracking(
+        storage_key: str,
+        enable: bool
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Set tracking for a storage key's buckets.
+
+    **EXPERIMENTAL**
+
+    :param storage_key:
+    :param enable:
+    '''
+    params: T_JSON_DICT = dict()
+    params['storageKey'] = storage_key
+    params['enable'] = enable
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Storage.setStorageBucketTracking',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def delete_storage_bucket(
+        storage_key: str,
+        bucket_name: str
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Deletes the Storage Bucket with the given storage key and bucket name.
+
+    **EXPERIMENTAL**
+
+    :param storage_key:
+    :param bucket_name:
+    '''
+    params: T_JSON_DICT = dict()
+    params['storageKey'] = storage_key
+    params['bucketName'] = bucket_name
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Storage.deleteStorageBucket',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
 @event_class('Storage.cacheStorageContentUpdated')
 @dataclass
 class CacheStorageContentUpdated:
@@ -487,6 +1065,8 @@ class CacheStorageContentUpdated:
     '''
     #: Origin to update.
     origin: str
+    #: Storage key to update.
+    storage_key: str
     #: Name of cache in origin.
     cache_name: str
 
@@ -494,6 +1074,7 @@ class CacheStorageContentUpdated:
     def from_json(cls, json: T_JSON_DICT) -> CacheStorageContentUpdated:
         return cls(
             origin=str(json['origin']),
+            storage_key=str(json['storageKey']),
             cache_name=str(json['cacheName'])
         )
 
@@ -506,11 +1087,14 @@ class CacheStorageListUpdated:
     '''
     #: Origin to update.
     origin: str
+    #: Storage key to update.
+    storage_key: str
 
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> CacheStorageListUpdated:
         return cls(
-            origin=str(json['origin'])
+            origin=str(json['origin']),
+            storage_key=str(json['storageKey'])
         )
 
 
@@ -522,6 +1106,8 @@ class IndexedDBContentUpdated:
     '''
     #: Origin to update.
     origin: str
+    #: Storage key to update.
+    storage_key: str
     #: Database to update.
     database_name: str
     #: ObjectStore to update.
@@ -531,6 +1117,7 @@ class IndexedDBContentUpdated:
     def from_json(cls, json: T_JSON_DICT) -> IndexedDBContentUpdated:
         return cls(
             origin=str(json['origin']),
+            storage_key=str(json['storageKey']),
             database_name=str(json['databaseName']),
             object_store_name=str(json['objectStoreName'])
         )
@@ -544,11 +1131,14 @@ class IndexedDBListUpdated:
     '''
     #: Origin to update.
     origin: str
+    #: Storage key to update.
+    storage_key: str
 
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> IndexedDBListUpdated:
         return cls(
-            origin=str(json['origin'])
+            origin=str(json['origin']),
+            storage_key=str(json['storageKey'])
         )
 
 
@@ -570,4 +1160,58 @@ class InterestGroupAccessed:
             type_=InterestGroupAccessType.from_json(json['type']),
             owner_origin=str(json['ownerOrigin']),
             name=str(json['name'])
+        )
+
+
+@event_class('Storage.sharedStorageAccessed')
+@dataclass
+class SharedStorageAccessed:
+    '''
+    Shared storage was accessed by the associated page.
+    The following parameters are included in all events.
+    '''
+    #: Time of the access.
+    access_time: network.TimeSinceEpoch
+    #: Enum value indicating the Shared Storage API method invoked.
+    type_: SharedStorageAccessType
+    #: DevTools Frame Token for the primary frame tree's root.
+    main_frame_id: page.FrameId
+    #: Serialized origin for the context that invoked the Shared Storage API.
+    owner_origin: str
+    #: The sub-parameters warapped by ``params`` are all optional and their
+    #: presence/absence depends on ``type``.
+    params: SharedStorageAccessParams
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> SharedStorageAccessed:
+        return cls(
+            access_time=network.TimeSinceEpoch.from_json(json['accessTime']),
+            type_=SharedStorageAccessType.from_json(json['type']),
+            main_frame_id=page.FrameId.from_json(json['mainFrameId']),
+            owner_origin=str(json['ownerOrigin']),
+            params=SharedStorageAccessParams.from_json(json['params'])
+        )
+
+
+@event_class('Storage.storageBucketCreatedOrUpdated')
+@dataclass
+class StorageBucketCreatedOrUpdated:
+    bucket: StorageBucketInfo
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> StorageBucketCreatedOrUpdated:
+        return cls(
+            bucket=StorageBucketInfo.from_json(json['bucket'])
+        )
+
+
+@event_class('Storage.storageBucketDeleted')
+@dataclass
+class StorageBucketDeleted:
+    bucket_id: str
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> StorageBucketDeleted:
+        return cls(
+            bucket_id=str(json['bucketId'])
         )

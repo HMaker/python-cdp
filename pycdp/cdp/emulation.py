@@ -150,11 +150,17 @@ class UserAgentMetadata:
 
     mobile: bool
 
+    #: Brands appearing in Sec-CH-UA.
     brands: typing.Optional[typing.List[UserAgentBrandVersion]] = None
 
+    #: Brands appearing in Sec-CH-UA-Full-Version-List.
     full_version_list: typing.Optional[typing.List[UserAgentBrandVersion]] = None
 
     full_version: typing.Optional[str] = None
+
+    bitness: typing.Optional[str] = None
+
+    wow64: typing.Optional[bool] = None
 
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
@@ -169,6 +175,10 @@ class UserAgentMetadata:
             json['fullVersionList'] = [i.to_json() for i in self.full_version_list]
         if self.full_version is not None:
             json['fullVersion'] = self.full_version
+        if self.bitness is not None:
+            json['bitness'] = self.bitness
+        if self.wow64 is not None:
+            json['wow64'] = self.wow64
         return json
 
     @classmethod
@@ -179,9 +189,11 @@ class UserAgentMetadata:
             architecture=str(json['architecture']),
             model=str(json['model']),
             mobile=bool(json['mobile']),
-            brands=[UserAgentBrandVersion.from_json(i) for i in json['brands']] if 'brands' in json else None,
-            full_version_list=[UserAgentBrandVersion.from_json(i) for i in json['fullVersionList']] if 'fullVersionList' in json else None,
-            full_version=str(json['fullVersion']) if 'fullVersion' in json else None,
+            brands=[UserAgentBrandVersion.from_json(i) for i in json['brands']] if json.get('brands', None) is not None else None,
+            full_version_list=[UserAgentBrandVersion.from_json(i) for i in json['fullVersionList']] if json.get('fullVersionList', None) is not None else None,
+            full_version=str(json['fullVersion']) if json.get('fullVersion', None) is not None else None,
+            bitness=str(json['bitness']) if json.get('bitness', None) is not None else None,
+            wow64=bool(json['wow64']) if json.get('wow64', None) is not None else None,
         )
 
 
@@ -190,7 +202,6 @@ class DisabledImageType(enum.Enum):
     Enum of image types that can be disabled.
     '''
     AVIF = "avif"
-    JXL = "jxl"
     WEBP = "webp"
 
     def to_json(self) -> str:
@@ -478,7 +489,7 @@ def set_emulated_vision_deficiency(
 
     **EXPERIMENTAL**
 
-    :param type_: Vision deficiency to emulate.
+    :param type_: Vision deficiency to emulate. Order: best-effort emulations come first, followed by any physiologically accurate emulations for medically recognized color vision deficiencies.
     '''
     params: T_JSON_DICT = dict()
     params['type'] = type_
@@ -748,6 +759,25 @@ def set_disabled_image_types(
     json = yield cmd_dict
 
 
+def set_hardware_concurrency_override(
+        hardware_concurrency: int
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+
+
+    **EXPERIMENTAL**
+
+    :param hardware_concurrency: Hardware concurrency to report
+    '''
+    params: T_JSON_DICT = dict()
+    params['hardwareConcurrency'] = hardware_concurrency
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Emulation.setHardwareConcurrencyOverride',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
 def set_user_agent_override(
         user_agent: str,
         accept_language: typing.Optional[str] = None,
@@ -772,6 +802,25 @@ def set_user_agent_override(
         params['userAgentMetadata'] = user_agent_metadata.to_json()
     cmd_dict: T_JSON_DICT = {
         'method': 'Emulation.setUserAgentOverride',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def set_automation_override(
+        enabled: bool
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Allows overriding the automation flag.
+
+    **EXPERIMENTAL**
+
+    :param enabled: Whether the override should be enabled.
+    '''
+    params: T_JSON_DICT = dict()
+    params['enabled'] = enabled
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Emulation.setAutomationOverride',
         'params': params,
     }
     json = yield cmd_dict

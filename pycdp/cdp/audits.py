@@ -66,7 +66,7 @@ class AffectedRequest:
     def from_json(cls, json: T_JSON_DICT) -> AffectedRequest:
         return cls(
             request_id=network.RequestId.from_json(json['requestId']),
-            url=str(json['url']) if 'url' in json else None,
+            url=str(json['url']) if json.get('url', None) is not None else None,
         )
 
 
@@ -89,23 +89,25 @@ class AffectedFrame:
         )
 
 
-class SameSiteCookieExclusionReason(enum.Enum):
+class CookieExclusionReason(enum.Enum):
     EXCLUDE_SAME_SITE_UNSPECIFIED_TREATED_AS_LAX = "ExcludeSameSiteUnspecifiedTreatedAsLax"
     EXCLUDE_SAME_SITE_NONE_INSECURE = "ExcludeSameSiteNoneInsecure"
     EXCLUDE_SAME_SITE_LAX = "ExcludeSameSiteLax"
     EXCLUDE_SAME_SITE_STRICT = "ExcludeSameSiteStrict"
     EXCLUDE_INVALID_SAME_PARTY = "ExcludeInvalidSameParty"
     EXCLUDE_SAME_PARTY_CROSS_PARTY_CONTEXT = "ExcludeSamePartyCrossPartyContext"
+    EXCLUDE_DOMAIN_NON_ASCII = "ExcludeDomainNonASCII"
+    EXCLUDE_THIRD_PARTY_COOKIE_BLOCKED_IN_FIRST_PARTY_SET = "ExcludeThirdPartyCookieBlockedInFirstPartySet"
 
     def to_json(self) -> str:
         return self.value
 
     @classmethod
-    def from_json(cls, json: str) -> SameSiteCookieExclusionReason:
+    def from_json(cls, json: str) -> CookieExclusionReason:
         return cls(json)
 
 
-class SameSiteCookieWarningReason(enum.Enum):
+class CookieWarningReason(enum.Enum):
     WARN_SAME_SITE_UNSPECIFIED_CROSS_SITE_CONTEXT = "WarnSameSiteUnspecifiedCrossSiteContext"
     WARN_SAME_SITE_NONE_INSECURE = "WarnSameSiteNoneInsecure"
     WARN_SAME_SITE_UNSPECIFIED_LAX_ALLOW_UNSAFE = "WarnSameSiteUnspecifiedLaxAllowUnsafe"
@@ -114,16 +116,18 @@ class SameSiteCookieWarningReason(enum.Enum):
     WARN_SAME_SITE_STRICT_CROSS_DOWNGRADE_LAX = "WarnSameSiteStrictCrossDowngradeLax"
     WARN_SAME_SITE_LAX_CROSS_DOWNGRADE_STRICT = "WarnSameSiteLaxCrossDowngradeStrict"
     WARN_SAME_SITE_LAX_CROSS_DOWNGRADE_LAX = "WarnSameSiteLaxCrossDowngradeLax"
+    WARN_ATTRIBUTE_VALUE_EXCEEDS_MAX_SIZE = "WarnAttributeValueExceedsMaxSize"
+    WARN_DOMAIN_NON_ASCII = "WarnDomainNonASCII"
 
     def to_json(self) -> str:
         return self.value
 
     @classmethod
-    def from_json(cls, json: str) -> SameSiteCookieWarningReason:
+    def from_json(cls, json: str) -> CookieWarningReason:
         return cls(json)
 
 
-class SameSiteCookieOperation(enum.Enum):
+class CookieOperation(enum.Enum):
     SET_COOKIE = "SetCookie"
     READ_COOKIE = "ReadCookie"
 
@@ -131,24 +135,24 @@ class SameSiteCookieOperation(enum.Enum):
         return self.value
 
     @classmethod
-    def from_json(cls, json: str) -> SameSiteCookieOperation:
+    def from_json(cls, json: str) -> CookieOperation:
         return cls(json)
 
 
 @dataclass
-class SameSiteCookieIssueDetails:
+class CookieIssueDetails:
     '''
     This information is currently necessary, as the front-end has a difficult
     time finding a specific cookie. With this, we can convey specific error
     information without the cookie.
     '''
-    cookie_warning_reasons: typing.List[SameSiteCookieWarningReason]
+    cookie_warning_reasons: typing.List[CookieWarningReason]
 
-    cookie_exclusion_reasons: typing.List[SameSiteCookieExclusionReason]
+    cookie_exclusion_reasons: typing.List[CookieExclusionReason]
 
     #: Optionally identifies the site-for-cookies and the cookie url, which
     #: may be used by the front-end as additional context.
-    operation: SameSiteCookieOperation
+    operation: CookieOperation
 
     #: If AffectedCookie is not set then rawCookieLine contains the raw
     #: Set-Cookie header string. This hints at a problem where the
@@ -182,16 +186,16 @@ class SameSiteCookieIssueDetails:
         return json
 
     @classmethod
-    def from_json(cls, json: T_JSON_DICT) -> SameSiteCookieIssueDetails:
+    def from_json(cls, json: T_JSON_DICT) -> CookieIssueDetails:
         return cls(
-            cookie_warning_reasons=[SameSiteCookieWarningReason.from_json(i) for i in json['cookieWarningReasons']],
-            cookie_exclusion_reasons=[SameSiteCookieExclusionReason.from_json(i) for i in json['cookieExclusionReasons']],
-            operation=SameSiteCookieOperation.from_json(json['operation']),
-            cookie=AffectedCookie.from_json(json['cookie']) if 'cookie' in json else None,
-            raw_cookie_line=str(json['rawCookieLine']) if 'rawCookieLine' in json else None,
-            site_for_cookies=str(json['siteForCookies']) if 'siteForCookies' in json else None,
-            cookie_url=str(json['cookieUrl']) if 'cookieUrl' in json else None,
-            request=AffectedRequest.from_json(json['request']) if 'request' in json else None,
+            cookie_warning_reasons=[CookieWarningReason.from_json(i) for i in json['cookieWarningReasons']],
+            cookie_exclusion_reasons=[CookieExclusionReason.from_json(i) for i in json['cookieExclusionReasons']],
+            operation=CookieOperation.from_json(json['operation']),
+            cookie=AffectedCookie.from_json(json['cookie']) if json.get('cookie', None) is not None else None,
+            raw_cookie_line=str(json['rawCookieLine']) if json.get('rawCookieLine', None) is not None else None,
+            site_for_cookies=str(json['siteForCookies']) if json.get('siteForCookies', None) is not None else None,
+            cookie_url=str(json['cookieUrl']) if json.get('cookieUrl', None) is not None else None,
+            request=AffectedRequest.from_json(json['request']) if json.get('request', None) is not None else None,
         )
 
 
@@ -209,6 +213,7 @@ class MixedContentResolutionStatus(enum.Enum):
 
 
 class MixedContentResourceType(enum.Enum):
+    ATTRIBUTION_SRC = "AttributionSrc"
     AUDIO = "Audio"
     BEACON = "Beacon"
     CSP_REPORT = "CSPReport"
@@ -287,9 +292,9 @@ class MixedContentIssueDetails:
             resolution_status=MixedContentResolutionStatus.from_json(json['resolutionStatus']),
             insecure_url=str(json['insecureURL']),
             main_resource_url=str(json['mainResourceURL']),
-            resource_type=MixedContentResourceType.from_json(json['resourceType']) if 'resourceType' in json else None,
-            request=AffectedRequest.from_json(json['request']) if 'request' in json else None,
-            frame=AffectedFrame.from_json(json['frame']) if 'frame' in json else None,
+            resource_type=MixedContentResourceType.from_json(json['resourceType']) if json.get('resourceType', None) is not None else None,
+            request=AffectedRequest.from_json(json['request']) if json.get('request', None) is not None else None,
+            frame=AffectedFrame.from_json(json['frame']) if json.get('frame', None) is not None else None,
         )
 
 
@@ -342,8 +347,8 @@ class BlockedByResponseIssueDetails:
         return cls(
             request=AffectedRequest.from_json(json['request']),
             reason=BlockedByResponseReason.from_json(json['reason']),
-            parent_frame=AffectedFrame.from_json(json['parentFrame']) if 'parentFrame' in json else None,
-            blocked_frame=AffectedFrame.from_json(json['blockedFrame']) if 'blockedFrame' in json else None,
+            parent_frame=AffectedFrame.from_json(json['parentFrame']) if json.get('parentFrame', None) is not None else None,
+            blocked_frame=AffectedFrame.from_json(json['blockedFrame']) if json.get('blockedFrame', None) is not None else None,
         )
 
 
@@ -440,7 +445,7 @@ class SourceCodeLocation:
             url=str(json['url']),
             line_number=int(json['lineNumber']),
             column_number=int(json['columnNumber']),
-            script_id=runtime.ScriptId.from_json(json['scriptId']) if 'scriptId' in json else None,
+            script_id=runtime.ScriptId.from_json(json['scriptId']) if json.get('scriptId', None) is not None else None,
         )
 
 
@@ -483,10 +488,10 @@ class ContentSecurityPolicyIssueDetails:
             violated_directive=str(json['violatedDirective']),
             is_report_only=bool(json['isReportOnly']),
             content_security_policy_violation_type=ContentSecurityPolicyViolationType.from_json(json['contentSecurityPolicyViolationType']),
-            blocked_url=str(json['blockedURL']) if 'blockedURL' in json else None,
-            frame_ancestor=AffectedFrame.from_json(json['frameAncestor']) if 'frameAncestor' in json else None,
-            source_code_location=SourceCodeLocation.from_json(json['sourceCodeLocation']) if 'sourceCodeLocation' in json else None,
-            violating_node_id=dom.BackendNodeId.from_json(json['violatingNodeId']) if 'violatingNodeId' in json else None,
+            blocked_url=str(json['blockedURL']) if json.get('blockedURL', None) is not None else None,
+            frame_ancestor=AffectedFrame.from_json(json['frameAncestor']) if json.get('frameAncestor', None) is not None else None,
+            source_code_location=SourceCodeLocation.from_json(json['sourceCodeLocation']) if json.get('sourceCodeLocation', None) is not None else None,
+            violating_node_id=dom.BackendNodeId.from_json(json['violatingNodeId']) if json.get('violatingNodeId', None) is not None else None,
         )
 
 
@@ -577,9 +582,9 @@ class TrustedWebActivityIssueDetails:
         return cls(
             url=str(json['url']),
             violation_type=TwaQualityEnforcementViolationType.from_json(json['violationType']),
-            http_status_code=int(json['httpStatusCode']) if 'httpStatusCode' in json else None,
-            package_name=str(json['packageName']) if 'packageName' in json else None,
-            signature=str(json['signature']) if 'signature' in json else None,
+            http_status_code=int(json['httpStatusCode']) if json.get('httpStatusCode', None) is not None else None,
+            package_name=str(json['packageName']) if json.get('packageName', None) is not None else None,
+            signature=str(json['signature']) if json.get('signature', None) is not None else None,
         )
 
 
@@ -664,26 +669,28 @@ class CorsIssueDetails:
             cors_error_status=network.CorsErrorStatus.from_json(json['corsErrorStatus']),
             is_warning=bool(json['isWarning']),
             request=AffectedRequest.from_json(json['request']),
-            location=SourceCodeLocation.from_json(json['location']) if 'location' in json else None,
-            initiator_origin=str(json['initiatorOrigin']) if 'initiatorOrigin' in json else None,
-            resource_ip_address_space=network.IPAddressSpace.from_json(json['resourceIPAddressSpace']) if 'resourceIPAddressSpace' in json else None,
-            client_security_state=network.ClientSecurityState.from_json(json['clientSecurityState']) if 'clientSecurityState' in json else None,
+            location=SourceCodeLocation.from_json(json['location']) if json.get('location', None) is not None else None,
+            initiator_origin=str(json['initiatorOrigin']) if json.get('initiatorOrigin', None) is not None else None,
+            resource_ip_address_space=network.IPAddressSpace.from_json(json['resourceIPAddressSpace']) if json.get('resourceIPAddressSpace', None) is not None else None,
+            client_security_state=network.ClientSecurityState.from_json(json['clientSecurityState']) if json.get('clientSecurityState', None) is not None else None,
         )
 
 
 class AttributionReportingIssueType(enum.Enum):
     PERMISSION_POLICY_DISABLED = "PermissionPolicyDisabled"
-    INVALID_ATTRIBUTION_SOURCE_EVENT_ID = "InvalidAttributionSourceEventId"
-    INVALID_ATTRIBUTION_DATA = "InvalidAttributionData"
-    ATTRIBUTION_SOURCE_UNTRUSTWORTHY_ORIGIN = "AttributionSourceUntrustworthyOrigin"
-    ATTRIBUTION_UNTRUSTWORTHY_ORIGIN = "AttributionUntrustworthyOrigin"
-    ATTRIBUTION_TRIGGER_DATA_TOO_LARGE = "AttributionTriggerDataTooLarge"
-    ATTRIBUTION_EVENT_SOURCE_TRIGGER_DATA_TOO_LARGE = "AttributionEventSourceTriggerDataTooLarge"
-    INVALID_ATTRIBUTION_SOURCE_EXPIRY = "InvalidAttributionSourceExpiry"
-    INVALID_ATTRIBUTION_SOURCE_PRIORITY = "InvalidAttributionSourcePriority"
-    INVALID_EVENT_SOURCE_TRIGGER_DATA = "InvalidEventSourceTriggerData"
-    INVALID_TRIGGER_PRIORITY = "InvalidTriggerPriority"
-    INVALID_TRIGGER_DEDUP_KEY = "InvalidTriggerDedupKey"
+    UNTRUSTWORTHY_REPORTING_ORIGIN = "UntrustworthyReportingOrigin"
+    INSECURE_CONTEXT = "InsecureContext"
+    INVALID_HEADER = "InvalidHeader"
+    INVALID_REGISTER_TRIGGER_HEADER = "InvalidRegisterTriggerHeader"
+    INVALID_ELIGIBLE_HEADER = "InvalidEligibleHeader"
+    SOURCE_AND_TRIGGER_HEADERS = "SourceAndTriggerHeaders"
+    SOURCE_IGNORED = "SourceIgnored"
+    TRIGGER_IGNORED = "TriggerIgnored"
+    OS_SOURCE_IGNORED = "OsSourceIgnored"
+    OS_TRIGGER_IGNORED = "OsTriggerIgnored"
+    INVALID_REGISTER_OS_SOURCE_HEADER = "InvalidRegisterOsSourceHeader"
+    INVALID_REGISTER_OS_TRIGGER_HEADER = "InvalidRegisterOsTriggerHeader"
+    WEB_AND_OS_HEADERS = "WebAndOsHeaders"
 
     def to_json(self) -> str:
         return self.value
@@ -697,11 +704,9 @@ class AttributionReportingIssueType(enum.Enum):
 class AttributionReportingIssueDetails:
     '''
     Details for issues around "Attribution Reporting API" usage.
-    Explainer: https://github.com/WICG/conversion-measurement-api
+    Explainer: https://github.com/WICG/attribution-reporting-api
     '''
     violation_type: AttributionReportingIssueType
-
-    frame: typing.Optional[AffectedFrame] = None
 
     request: typing.Optional[AffectedRequest] = None
 
@@ -712,8 +717,6 @@ class AttributionReportingIssueDetails:
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
         json['violationType'] = self.violation_type.to_json()
-        if self.frame is not None:
-            json['frame'] = self.frame.to_json()
         if self.request is not None:
             json['request'] = self.request.to_json()
         if self.violating_node_id is not None:
@@ -726,10 +729,9 @@ class AttributionReportingIssueDetails:
     def from_json(cls, json: T_JSON_DICT) -> AttributionReportingIssueDetails:
         return cls(
             violation_type=AttributionReportingIssueType.from_json(json['violationType']),
-            frame=AffectedFrame.from_json(json['frame']) if 'frame' in json else None,
-            request=AffectedRequest.from_json(json['request']) if 'request' in json else None,
-            violating_node_id=dom.BackendNodeId.from_json(json['violatingNodeId']) if 'violatingNodeId' in json else None,
-            invalid_parameter=str(json['invalidParameter']) if 'invalidParameter' in json else None,
+            request=AffectedRequest.from_json(json['request']) if json.get('request', None) is not None else None,
+            violating_node_id=dom.BackendNodeId.from_json(json['violatingNodeId']) if json.get('violatingNodeId', None) is not None else None,
+            invalid_parameter=str(json['invalidParameter']) if json.get('invalidParameter', None) is not None else None,
         )
 
 
@@ -788,12 +790,22 @@ class NavigatorUserAgentIssueDetails:
     def from_json(cls, json: T_JSON_DICT) -> NavigatorUserAgentIssueDetails:
         return cls(
             url=str(json['url']),
-            location=SourceCodeLocation.from_json(json['location']) if 'location' in json else None,
+            location=SourceCodeLocation.from_json(json['location']) if json.get('location', None) is not None else None,
         )
 
 
 class GenericIssueErrorType(enum.Enum):
     CROSS_ORIGIN_PORTAL_POST_MESSAGE_ERROR = "CrossOriginPortalPostMessageError"
+    FORM_LABEL_FOR_NAME_ERROR = "FormLabelForNameError"
+    FORM_DUPLICATE_ID_FOR_INPUT_ERROR = "FormDuplicateIdForInputError"
+    FORM_INPUT_WITH_NO_LABEL_ERROR = "FormInputWithNoLabelError"
+    FORM_AUTOCOMPLETE_ATTRIBUTE_EMPTY_ERROR = "FormAutocompleteAttributeEmptyError"
+    FORM_EMPTY_ID_AND_NAME_ATTRIBUTES_FOR_INPUT_ERROR = "FormEmptyIdAndNameAttributesForInputError"
+    FORM_ARIA_LABELLED_BY_TO_NON_EXISTING_ID = "FormAriaLabelledByToNonExistingId"
+    FORM_INPUT_ASSIGNED_AUTOCOMPLETE_VALUE_TO_ID_OR_NAME_ATTRIBUTE_ERROR = "FormInputAssignedAutocompleteValueToIdOrNameAttributeError"
+    FORM_LABEL_HAS_NEITHER_FOR_NOR_NESTED_INPUT = "FormLabelHasNeitherForNorNestedInput"
+    FORM_LABEL_FOR_MATCHES_NON_EXISTING_ID_ERROR = "FormLabelForMatchesNonExistingIdError"
+    FORM_INPUT_HAS_WRONG_BUT_WELL_INTENDED_AUTOCOMPLETE_VALUE_ERROR = "FormInputHasWrongButWellIntendedAutocompleteValueError"
 
     def to_json(self) -> str:
         return self.value
@@ -813,18 +825,28 @@ class GenericIssueDetails:
 
     frame_id: typing.Optional[page.FrameId] = None
 
+    violating_node_id: typing.Optional[dom.BackendNodeId] = None
+
+    violating_node_attribute: typing.Optional[str] = None
+
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
         json['errorType'] = self.error_type.to_json()
         if self.frame_id is not None:
             json['frameId'] = self.frame_id.to_json()
+        if self.violating_node_id is not None:
+            json['violatingNodeId'] = self.violating_node_id.to_json()
+        if self.violating_node_attribute is not None:
+            json['violatingNodeAttribute'] = self.violating_node_attribute
         return json
 
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> GenericIssueDetails:
         return cls(
             error_type=GenericIssueErrorType.from_json(json['errorType']),
-            frame_id=page.FrameId.from_json(json['frameId']) if 'frameId' in json else None,
+            frame_id=page.FrameId.from_json(json['frameId']) if json.get('frameId', None) is not None else None,
+            violating_node_id=dom.BackendNodeId.from_json(json['violatingNodeId']) if json.get('violatingNodeId', None) is not None else None,
+            violating_node_attribute=str(json['violatingNodeAttribute']) if json.get('violatingNodeAttribute', None) is not None else None,
         )
 
 
@@ -832,41 +854,52 @@ class GenericIssueDetails:
 class DeprecationIssueDetails:
     '''
     This issue tracks information needed to print a deprecation message.
-    The formatting is inherited from the old console.log version, see more at:
-    https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/core/frame/deprecation.cc
-    TODO(crbug.com/1264960): Re-work format to add i18n support per:
-    https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/public/devtools_protocol/README.md
+    https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/core/frame/third_party/blink/renderer/core/frame/deprecation/README.md
     '''
     source_code_location: SourceCodeLocation
 
-    deprecation_type: str
+    #: One of the deprecation names from third_party/blink/renderer/core/frame/deprecation/deprecation.json5
+    type_: str
 
     affected_frame: typing.Optional[AffectedFrame] = None
-
-    #: The content of the deprecation issue (this won't be translated),
-    #: e.g. "window.inefficientLegacyStorageMethod will be removed in M97,
-    #: around January 2022. Please use Web Storage or Indexed Database
-    #: instead. This standard was abandoned in January, 1970. See
-    #: https://www.chromestatus.com/feature/5684870116278272 for more details."
-    message: typing.Optional[str] = None
 
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
         json['sourceCodeLocation'] = self.source_code_location.to_json()
-        json['deprecationType'] = self.deprecation_type
+        json['type'] = self.type_
         if self.affected_frame is not None:
             json['affectedFrame'] = self.affected_frame.to_json()
-        if self.message is not None:
-            json['message'] = self.message
         return json
 
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> DeprecationIssueDetails:
         return cls(
             source_code_location=SourceCodeLocation.from_json(json['sourceCodeLocation']),
-            deprecation_type=str(json['deprecationType']),
-            affected_frame=AffectedFrame.from_json(json['affectedFrame']) if 'affectedFrame' in json else None,
-            message=str(json['message']) if 'message' in json else None,
+            type_=str(json['type']),
+            affected_frame=AffectedFrame.from_json(json['affectedFrame']) if json.get('affectedFrame', None) is not None else None,
+        )
+
+
+@dataclass
+class BounceTrackingIssueDetails:
+    '''
+    This issue warns about sites in the redirect chain of a finished navigation
+    that may be flagged as trackers and have their state cleared if they don't
+    receive a user interaction. Note that in this context 'site' means eTLD+1.
+    For example, if the URL ``https://example.test:80/bounce`` was in the
+    redirect chain, the site reported would be ``example.test``.
+    '''
+    tracking_sites: typing.List[str]
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['trackingSites'] = [i for i in self.tracking_sites]
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> BounceTrackingIssueDetails:
+        return cls(
+            tracking_sites=[str(i) for i in json['trackingSites']],
         )
 
 
@@ -902,28 +935,42 @@ class FederatedAuthRequestIssueReason(enum.Enum):
     '''
     Represents the failure reason when a federated authentication reason fails.
     Should be updated alongside RequestIdTokenStatus in
-    third_party/blink/public/mojom/webid/federated_auth_request.mojom to include
+    third_party/blink/public/mojom/devtools/inspector_issue.mojom to include
     all cases except for success.
     '''
-    APPROVAL_DECLINED = "ApprovalDeclined"
+    SHOULD_EMBARGO = "ShouldEmbargo"
     TOO_MANY_REQUESTS = "TooManyRequests"
-    MANIFEST_HTTP_NOT_FOUND = "ManifestHttpNotFound"
-    MANIFEST_NO_RESPONSE = "ManifestNoResponse"
-    MANIFEST_INVALID_RESPONSE = "ManifestInvalidResponse"
+    WELL_KNOWN_HTTP_NOT_FOUND = "WellKnownHttpNotFound"
+    WELL_KNOWN_NO_RESPONSE = "WellKnownNoResponse"
+    WELL_KNOWN_INVALID_RESPONSE = "WellKnownInvalidResponse"
+    WELL_KNOWN_LIST_EMPTY = "WellKnownListEmpty"
+    WELL_KNOWN_INVALID_CONTENT_TYPE = "WellKnownInvalidContentType"
+    CONFIG_NOT_IN_WELL_KNOWN = "ConfigNotInWellKnown"
+    WELL_KNOWN_TOO_BIG = "WellKnownTooBig"
+    CONFIG_HTTP_NOT_FOUND = "ConfigHttpNotFound"
+    CONFIG_NO_RESPONSE = "ConfigNoResponse"
+    CONFIG_INVALID_RESPONSE = "ConfigInvalidResponse"
+    CONFIG_INVALID_CONTENT_TYPE = "ConfigInvalidContentType"
     CLIENT_METADATA_HTTP_NOT_FOUND = "ClientMetadataHttpNotFound"
     CLIENT_METADATA_NO_RESPONSE = "ClientMetadataNoResponse"
     CLIENT_METADATA_INVALID_RESPONSE = "ClientMetadataInvalidResponse"
+    CLIENT_METADATA_INVALID_CONTENT_TYPE = "ClientMetadataInvalidContentType"
+    DISABLED_IN_SETTINGS = "DisabledInSettings"
     ERROR_FETCHING_SIGNIN = "ErrorFetchingSignin"
     INVALID_SIGNIN_RESPONSE = "InvalidSigninResponse"
     ACCOUNTS_HTTP_NOT_FOUND = "AccountsHttpNotFound"
     ACCOUNTS_NO_RESPONSE = "AccountsNoResponse"
     ACCOUNTS_INVALID_RESPONSE = "AccountsInvalidResponse"
+    ACCOUNTS_LIST_EMPTY = "AccountsListEmpty"
+    ACCOUNTS_INVALID_CONTENT_TYPE = "AccountsInvalidContentType"
     ID_TOKEN_HTTP_NOT_FOUND = "IdTokenHttpNotFound"
     ID_TOKEN_NO_RESPONSE = "IdTokenNoResponse"
     ID_TOKEN_INVALID_RESPONSE = "IdTokenInvalidResponse"
     ID_TOKEN_INVALID_REQUEST = "IdTokenInvalidRequest"
+    ID_TOKEN_INVALID_CONTENT_TYPE = "IdTokenInvalidContentType"
     ERROR_ID_TOKEN = "ErrorIdToken"
     CANCELED = "Canceled"
+    RP_PAGE_NOT_VISIBLE = "RpPageNotVisible"
 
     def to_json(self) -> str:
         return self.value
@@ -963,7 +1010,7 @@ class InspectorIssueCode(enum.Enum):
     optional fields in InspectorIssueDetails to convey more specific
     information about the kind of issue.
     '''
-    SAME_SITE_COOKIE_ISSUE = "SameSiteCookieIssue"
+    COOKIE_ISSUE = "CookieIssue"
     MIXED_CONTENT_ISSUE = "MixedContentIssue"
     BLOCKED_BY_RESPONSE_ISSUE = "BlockedByResponseIssue"
     HEAVY_AD_ISSUE = "HeavyAdIssue"
@@ -979,6 +1026,7 @@ class InspectorIssueCode(enum.Enum):
     DEPRECATION_ISSUE = "DeprecationIssue"
     CLIENT_HINT_ISSUE = "ClientHintIssue"
     FEDERATED_AUTH_REQUEST_ISSUE = "FederatedAuthRequestIssue"
+    BOUNCE_TRACKING_ISSUE = "BounceTrackingIssue"
 
     def to_json(self) -> str:
         return self.value
@@ -995,7 +1043,7 @@ class InspectorIssueDetails:
     specific to the kind of issue. When adding a new issue code, please also
     add a new optional field to this type.
     '''
-    same_site_cookie_issue_details: typing.Optional[SameSiteCookieIssueDetails] = None
+    cookie_issue_details: typing.Optional[CookieIssueDetails] = None
 
     mixed_content_issue_details: typing.Optional[MixedContentIssueDetails] = None
 
@@ -1027,10 +1075,12 @@ class InspectorIssueDetails:
 
     federated_auth_request_issue_details: typing.Optional[FederatedAuthRequestIssueDetails] = None
 
+    bounce_tracking_issue_details: typing.Optional[BounceTrackingIssueDetails] = None
+
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
-        if self.same_site_cookie_issue_details is not None:
-            json['sameSiteCookieIssueDetails'] = self.same_site_cookie_issue_details.to_json()
+        if self.cookie_issue_details is not None:
+            json['cookieIssueDetails'] = self.cookie_issue_details.to_json()
         if self.mixed_content_issue_details is not None:
             json['mixedContentIssueDetails'] = self.mixed_content_issue_details.to_json()
         if self.blocked_by_response_issue_details is not None:
@@ -1061,27 +1111,30 @@ class InspectorIssueDetails:
             json['clientHintIssueDetails'] = self.client_hint_issue_details.to_json()
         if self.federated_auth_request_issue_details is not None:
             json['federatedAuthRequestIssueDetails'] = self.federated_auth_request_issue_details.to_json()
+        if self.bounce_tracking_issue_details is not None:
+            json['bounceTrackingIssueDetails'] = self.bounce_tracking_issue_details.to_json()
         return json
 
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> InspectorIssueDetails:
         return cls(
-            same_site_cookie_issue_details=SameSiteCookieIssueDetails.from_json(json['sameSiteCookieIssueDetails']) if 'sameSiteCookieIssueDetails' in json else None,
-            mixed_content_issue_details=MixedContentIssueDetails.from_json(json['mixedContentIssueDetails']) if 'mixedContentIssueDetails' in json else None,
-            blocked_by_response_issue_details=BlockedByResponseIssueDetails.from_json(json['blockedByResponseIssueDetails']) if 'blockedByResponseIssueDetails' in json else None,
-            heavy_ad_issue_details=HeavyAdIssueDetails.from_json(json['heavyAdIssueDetails']) if 'heavyAdIssueDetails' in json else None,
-            content_security_policy_issue_details=ContentSecurityPolicyIssueDetails.from_json(json['contentSecurityPolicyIssueDetails']) if 'contentSecurityPolicyIssueDetails' in json else None,
-            shared_array_buffer_issue_details=SharedArrayBufferIssueDetails.from_json(json['sharedArrayBufferIssueDetails']) if 'sharedArrayBufferIssueDetails' in json else None,
-            twa_quality_enforcement_details=TrustedWebActivityIssueDetails.from_json(json['twaQualityEnforcementDetails']) if 'twaQualityEnforcementDetails' in json else None,
-            low_text_contrast_issue_details=LowTextContrastIssueDetails.from_json(json['lowTextContrastIssueDetails']) if 'lowTextContrastIssueDetails' in json else None,
-            cors_issue_details=CorsIssueDetails.from_json(json['corsIssueDetails']) if 'corsIssueDetails' in json else None,
-            attribution_reporting_issue_details=AttributionReportingIssueDetails.from_json(json['attributionReportingIssueDetails']) if 'attributionReportingIssueDetails' in json else None,
-            quirks_mode_issue_details=QuirksModeIssueDetails.from_json(json['quirksModeIssueDetails']) if 'quirksModeIssueDetails' in json else None,
-            navigator_user_agent_issue_details=NavigatorUserAgentIssueDetails.from_json(json['navigatorUserAgentIssueDetails']) if 'navigatorUserAgentIssueDetails' in json else None,
-            generic_issue_details=GenericIssueDetails.from_json(json['genericIssueDetails']) if 'genericIssueDetails' in json else None,
-            deprecation_issue_details=DeprecationIssueDetails.from_json(json['deprecationIssueDetails']) if 'deprecationIssueDetails' in json else None,
-            client_hint_issue_details=ClientHintIssueDetails.from_json(json['clientHintIssueDetails']) if 'clientHintIssueDetails' in json else None,
-            federated_auth_request_issue_details=FederatedAuthRequestIssueDetails.from_json(json['federatedAuthRequestIssueDetails']) if 'federatedAuthRequestIssueDetails' in json else None,
+            cookie_issue_details=CookieIssueDetails.from_json(json['cookieIssueDetails']) if json.get('cookieIssueDetails', None) is not None else None,
+            mixed_content_issue_details=MixedContentIssueDetails.from_json(json['mixedContentIssueDetails']) if json.get('mixedContentIssueDetails', None) is not None else None,
+            blocked_by_response_issue_details=BlockedByResponseIssueDetails.from_json(json['blockedByResponseIssueDetails']) if json.get('blockedByResponseIssueDetails', None) is not None else None,
+            heavy_ad_issue_details=HeavyAdIssueDetails.from_json(json['heavyAdIssueDetails']) if json.get('heavyAdIssueDetails', None) is not None else None,
+            content_security_policy_issue_details=ContentSecurityPolicyIssueDetails.from_json(json['contentSecurityPolicyIssueDetails']) if json.get('contentSecurityPolicyIssueDetails', None) is not None else None,
+            shared_array_buffer_issue_details=SharedArrayBufferIssueDetails.from_json(json['sharedArrayBufferIssueDetails']) if json.get('sharedArrayBufferIssueDetails', None) is not None else None,
+            twa_quality_enforcement_details=TrustedWebActivityIssueDetails.from_json(json['twaQualityEnforcementDetails']) if json.get('twaQualityEnforcementDetails', None) is not None else None,
+            low_text_contrast_issue_details=LowTextContrastIssueDetails.from_json(json['lowTextContrastIssueDetails']) if json.get('lowTextContrastIssueDetails', None) is not None else None,
+            cors_issue_details=CorsIssueDetails.from_json(json['corsIssueDetails']) if json.get('corsIssueDetails', None) is not None else None,
+            attribution_reporting_issue_details=AttributionReportingIssueDetails.from_json(json['attributionReportingIssueDetails']) if json.get('attributionReportingIssueDetails', None) is not None else None,
+            quirks_mode_issue_details=QuirksModeIssueDetails.from_json(json['quirksModeIssueDetails']) if json.get('quirksModeIssueDetails', None) is not None else None,
+            navigator_user_agent_issue_details=NavigatorUserAgentIssueDetails.from_json(json['navigatorUserAgentIssueDetails']) if json.get('navigatorUserAgentIssueDetails', None) is not None else None,
+            generic_issue_details=GenericIssueDetails.from_json(json['genericIssueDetails']) if json.get('genericIssueDetails', None) is not None else None,
+            deprecation_issue_details=DeprecationIssueDetails.from_json(json['deprecationIssueDetails']) if json.get('deprecationIssueDetails', None) is not None else None,
+            client_hint_issue_details=ClientHintIssueDetails.from_json(json['clientHintIssueDetails']) if json.get('clientHintIssueDetails', None) is not None else None,
+            federated_auth_request_issue_details=FederatedAuthRequestIssueDetails.from_json(json['federatedAuthRequestIssueDetails']) if json.get('federatedAuthRequestIssueDetails', None) is not None else None,
+            bounce_tracking_issue_details=BounceTrackingIssueDetails.from_json(json['bounceTrackingIssueDetails']) if json.get('bounceTrackingIssueDetails', None) is not None else None,
         )
 
 
@@ -1127,7 +1180,7 @@ class InspectorIssue:
         return cls(
             code=InspectorIssueCode.from_json(json['code']),
             details=InspectorIssueDetails.from_json(json['details']),
-            issue_id=IssueId.from_json(json['issueId']) if 'issueId' in json else None,
+            issue_id=IssueId.from_json(json['issueId']) if json.get('issueId', None) is not None else None,
         )
 
 
@@ -1164,7 +1217,7 @@ def get_encoded_response(
     }
     json = yield cmd_dict
     return (
-        str(json['body']) if 'body' in json else None,
+        str(json['body']) if json.get('body', None) is not None else None,
         int(json['originalSize']),
         int(json['encodedSize'])
     )

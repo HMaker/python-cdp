@@ -100,10 +100,11 @@ class PseudoType(enum.Enum):
     SCROLLBAR_CORNER = "scrollbar-corner"
     RESIZER = "resizer"
     INPUT_LIST_BUTTON = "input-list-button"
-    TRANSITION = "transition"
-    TRANSITION_CONTAINER = "transition-container"
-    TRANSITION_OLD_CONTENT = "transition-old-content"
-    TRANSITION_NEW_CONTENT = "transition-new-content"
+    VIEW_TRANSITION = "view-transition"
+    VIEW_TRANSITION_GROUP = "view-transition-group"
+    VIEW_TRANSITION_IMAGE_PAIR = "view-transition-image-pair"
+    VIEW_TRANSITION_OLD = "view-transition-old"
+    VIEW_TRANSITION_NEW = "view-transition-new"
 
     def to_json(self) -> str:
         return self.value
@@ -142,6 +143,38 @@ class CompatibilityMode(enum.Enum):
 
     @classmethod
     def from_json(cls, json: str) -> CompatibilityMode:
+        return cls(json)
+
+
+class PhysicalAxes(enum.Enum):
+    '''
+    ContainerSelector physical axes
+    '''
+    HORIZONTAL = "Horizontal"
+    VERTICAL = "Vertical"
+    BOTH = "Both"
+
+    def to_json(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_json(cls, json: str) -> PhysicalAxes:
+        return cls(json)
+
+
+class LogicalAxes(enum.Enum):
+    '''
+    ContainerSelector logical axes
+    '''
+    INLINE = "Inline"
+    BLOCK = "Block"
+    BOTH = "Both"
+
+    def to_json(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_json(cls, json: str) -> LogicalAxes:
         return cls(json)
 
 
@@ -210,6 +243,10 @@ class Node:
     #: Pseudo element type for this node.
     pseudo_type: typing.Optional[PseudoType] = None
 
+    #: Pseudo element identifier for this node. Only present if there is a
+    #: valid pseudoType.
+    pseudo_identifier: typing.Optional[str] = None
+
     #: Shadow root type.
     shadow_root_type: typing.Optional[ShadowRootType] = None
 
@@ -240,6 +277,8 @@ class Node:
     is_svg: typing.Optional[bool] = None
 
     compatibility_mode: typing.Optional[CompatibilityMode] = None
+
+    assigned_slot: typing.Optional[BackendNode] = None
 
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
@@ -275,6 +314,8 @@ class Node:
             json['value'] = self.value
         if self.pseudo_type is not None:
             json['pseudoType'] = self.pseudo_type.to_json()
+        if self.pseudo_identifier is not None:
+            json['pseudoIdentifier'] = self.pseudo_identifier
         if self.shadow_root_type is not None:
             json['shadowRootType'] = self.shadow_root_type.to_json()
         if self.frame_id is not None:
@@ -295,6 +336,8 @@ class Node:
             json['isSVG'] = self.is_svg
         if self.compatibility_mode is not None:
             json['compatibilityMode'] = self.compatibility_mode.to_json()
+        if self.assigned_slot is not None:
+            json['assignedSlot'] = self.assigned_slot.to_json()
         return json
 
     @classmethod
@@ -306,29 +349,31 @@ class Node:
             node_name=str(json['nodeName']),
             local_name=str(json['localName']),
             node_value=str(json['nodeValue']),
-            parent_id=NodeId.from_json(json['parentId']) if 'parentId' in json else None,
-            child_node_count=int(json['childNodeCount']) if 'childNodeCount' in json else None,
-            children=[Node.from_json(i) for i in json['children']] if 'children' in json else None,
-            attributes=[str(i) for i in json['attributes']] if 'attributes' in json else None,
-            document_url=str(json['documentURL']) if 'documentURL' in json else None,
-            base_url=str(json['baseURL']) if 'baseURL' in json else None,
-            public_id=str(json['publicId']) if 'publicId' in json else None,
-            system_id=str(json['systemId']) if 'systemId' in json else None,
-            internal_subset=str(json['internalSubset']) if 'internalSubset' in json else None,
-            xml_version=str(json['xmlVersion']) if 'xmlVersion' in json else None,
-            name=str(json['name']) if 'name' in json else None,
-            value=str(json['value']) if 'value' in json else None,
-            pseudo_type=PseudoType.from_json(json['pseudoType']) if 'pseudoType' in json else None,
-            shadow_root_type=ShadowRootType.from_json(json['shadowRootType']) if 'shadowRootType' in json else None,
-            frame_id=page.FrameId.from_json(json['frameId']) if 'frameId' in json else None,
-            content_document=Node.from_json(json['contentDocument']) if 'contentDocument' in json else None,
-            shadow_roots=[Node.from_json(i) for i in json['shadowRoots']] if 'shadowRoots' in json else None,
-            template_content=Node.from_json(json['templateContent']) if 'templateContent' in json else None,
-            pseudo_elements=[Node.from_json(i) for i in json['pseudoElements']] if 'pseudoElements' in json else None,
-            imported_document=Node.from_json(json['importedDocument']) if 'importedDocument' in json else None,
-            distributed_nodes=[BackendNode.from_json(i) for i in json['distributedNodes']] if 'distributedNodes' in json else None,
-            is_svg=bool(json['isSVG']) if 'isSVG' in json else None,
-            compatibility_mode=CompatibilityMode.from_json(json['compatibilityMode']) if 'compatibilityMode' in json else None,
+            parent_id=NodeId.from_json(json['parentId']) if json.get('parentId', None) is not None else None,
+            child_node_count=int(json['childNodeCount']) if json.get('childNodeCount', None) is not None else None,
+            children=[Node.from_json(i) for i in json['children']] if json.get('children', None) is not None else None,
+            attributes=[str(i) for i in json['attributes']] if json.get('attributes', None) is not None else None,
+            document_url=str(json['documentURL']) if json.get('documentURL', None) is not None else None,
+            base_url=str(json['baseURL']) if json.get('baseURL', None) is not None else None,
+            public_id=str(json['publicId']) if json.get('publicId', None) is not None else None,
+            system_id=str(json['systemId']) if json.get('systemId', None) is not None else None,
+            internal_subset=str(json['internalSubset']) if json.get('internalSubset', None) is not None else None,
+            xml_version=str(json['xmlVersion']) if json.get('xmlVersion', None) is not None else None,
+            name=str(json['name']) if json.get('name', None) is not None else None,
+            value=str(json['value']) if json.get('value', None) is not None else None,
+            pseudo_type=PseudoType.from_json(json['pseudoType']) if json.get('pseudoType', None) is not None else None,
+            pseudo_identifier=str(json['pseudoIdentifier']) if json.get('pseudoIdentifier', None) is not None else None,
+            shadow_root_type=ShadowRootType.from_json(json['shadowRootType']) if json.get('shadowRootType', None) is not None else None,
+            frame_id=page.FrameId.from_json(json['frameId']) if json.get('frameId', None) is not None else None,
+            content_document=Node.from_json(json['contentDocument']) if json.get('contentDocument', None) is not None else None,
+            shadow_roots=[Node.from_json(i) for i in json['shadowRoots']] if json.get('shadowRoots', None) is not None else None,
+            template_content=Node.from_json(json['templateContent']) if json.get('templateContent', None) is not None else None,
+            pseudo_elements=[Node.from_json(i) for i in json['pseudoElements']] if json.get('pseudoElements', None) is not None else None,
+            imported_document=Node.from_json(json['importedDocument']) if json.get('importedDocument', None) is not None else None,
+            distributed_nodes=[BackendNode.from_json(i) for i in json['distributedNodes']] if json.get('distributedNodes', None) is not None else None,
+            is_svg=bool(json['isSVG']) if json.get('isSVG', None) is not None else None,
+            compatibility_mode=CompatibilityMode.from_json(json['compatibilityMode']) if json.get('compatibilityMode', None) is not None else None,
+            assigned_slot=BackendNode.from_json(json['assignedSlot']) if json.get('assignedSlot', None) is not None else None,
         )
 
 
@@ -364,7 +409,7 @@ class RGBA:
             r=int(json['r']),
             g=int(json['g']),
             b=int(json['b']),
-            a=float(json['a']) if 'a' in json else None,
+            a=float(json['a']) if json.get('a', None) is not None else None,
         )
 
 
@@ -430,7 +475,7 @@ class BoxModel:
             margin=Quad.from_json(json['margin']),
             width=int(json['width']),
             height=int(json['height']),
-            shape_outside=ShapeOutsideInfo.from_json(json['shapeOutside']) if 'shapeOutside' in json else None,
+            shape_outside=ShapeOutsideInfo.from_json(json['shapeOutside']) if json.get('shapeOutside', None) is not None else None,
         )
 
 
@@ -800,6 +845,7 @@ def get_document(
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,Node]:
     '''
     Returns the root DOM node (and optionally the subtree) to the caller.
+    Implicitly enables the DOM domain events for the current target.
 
     :param depth: *(Optional)* The maximum depth at which children should be retrieved, defaults to 1. Use -1 for the entire subtree or provide an integer larger than 0.
     :param pierce: *(Optional)* Whether or not iframes and shadow roots should be traversed when returning the subtree (default is false).
@@ -910,7 +956,7 @@ def get_node_for_location(
     return (
         BackendNodeId.from_json(json['backendNodeId']),
         page.FrameId.from_json(json['frameId']),
-        NodeId.from_json(json['nodeId']) if 'nodeId' in json else None
+        NodeId.from_json(json['nodeId']) if json.get('nodeId', None) is not None else None
     )
 
 
@@ -1177,6 +1223,23 @@ def query_selector_all(
     return [NodeId.from_json(i) for i in json['nodeIds']]
 
 
+def get_top_layer_elements() -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.List[NodeId]]:
+    '''
+    Returns NodeIds of current top layer elements.
+    Top layer is rendered closest to the user within a viewport, therefore its elements always
+    appear on top of all other content.
+
+    **EXPERIMENTAL**
+
+    :returns: NodeIds of top layer elements
+    '''
+    cmd_dict: T_JSON_DICT = {
+        'method': 'DOM.getTopLayerElements',
+    }
+    json = yield cmd_dict
+    return [NodeId.from_json(i) for i in json['nodeIds']]
+
+
 def redo() -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
     '''
     Re-does the last undone action.
@@ -1420,7 +1483,7 @@ def get_node_stack_traces(
         'params': params,
     }
     json = yield cmd_dict
-    return runtime.StackTrace.from_json(json['creation']) if 'creation' in json else None
+    return runtime.StackTrace.from_json(json['creation']) if json.get('creation', None) is not None else None
 
 
 def get_file_info(
@@ -1562,35 +1625,44 @@ def get_frame_owner(
     json = yield cmd_dict
     return (
         BackendNodeId.from_json(json['backendNodeId']),
-        NodeId.from_json(json['nodeId']) if 'nodeId' in json else None
+        NodeId.from_json(json['nodeId']) if json.get('nodeId', None) is not None else None
     )
 
 
 def get_container_for_node(
         node_id: NodeId,
-        container_name: typing.Optional[str] = None
+        container_name: typing.Optional[str] = None,
+        physical_axes: typing.Optional[PhysicalAxes] = None,
+        logical_axes: typing.Optional[LogicalAxes] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.Optional[NodeId]]:
     '''
-    Returns the container of the given node based on container query conditions.
-    If containerName is given, it will find the nearest container with a matching name;
-    otherwise it will find the nearest container regardless of its container name.
+    Returns the query container of the given node based on container query
+    conditions: containerName, physical, and logical axes. If no axes are
+    provided, the style container is returned, which is the direct parent or the
+    closest element with a matching container-name.
 
     **EXPERIMENTAL**
 
     :param node_id:
     :param container_name: *(Optional)*
+    :param physical_axes: *(Optional)*
+    :param logical_axes: *(Optional)*
     :returns: *(Optional)* The container node for the given node, or null if not found.
     '''
     params: T_JSON_DICT = dict()
     params['nodeId'] = node_id.to_json()
     if container_name is not None:
         params['containerName'] = container_name
+    if physical_axes is not None:
+        params['physicalAxes'] = physical_axes.to_json()
+    if logical_axes is not None:
+        params['logicalAxes'] = logical_axes.to_json()
     cmd_dict: T_JSON_DICT = {
         'method': 'DOM.getContainerForNode',
         'params': params,
     }
     json = yield cmd_dict
-    return NodeId.from_json(json['nodeId']) if 'nodeId' in json else None
+    return NodeId.from_json(json['nodeId']) if json.get('nodeId', None) is not None else None
 
 
 def get_querying_descendants_for_container(
@@ -1702,7 +1774,7 @@ class ChildNodeInserted:
     '''
     #: Id of the node that has changed.
     parent_node_id: NodeId
-    #: If of the previous siblint.
+    #: Id of the previous sibling.
     previous_node_id: NodeId
     #: Inserted node data.
     node: Node
@@ -1807,6 +1879,23 @@ class PseudoElementAdded:
         return cls(
             parent_id=NodeId.from_json(json['parentId']),
             pseudo_element=Node.from_json(json['pseudoElement'])
+        )
+
+
+@event_class('DOM.topLayerElementsUpdated')
+@dataclass
+class TopLayerElementsUpdated:
+    '''
+    **EXPERIMENTAL**
+
+    Called when top layer elements are changed.
+    '''
+
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> TopLayerElementsUpdated:
+        return cls(
+
         )
 
 

@@ -27,6 +27,36 @@ class ScriptId(str):
         return 'ScriptId({})'.format(super().__repr__())
 
 
+@dataclass
+class WebDriverValue:
+    '''
+    Represents the value serialiazed by the WebDriver BiDi specification
+    https://w3c.github.io/webdriver-bidi.
+    '''
+    type_: str
+
+    value: typing.Optional[typing.Any] = None
+
+    object_id: typing.Optional[str] = None
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['type'] = self.type_
+        if self.value is not None:
+            json['value'] = self.value
+        if self.object_id is not None:
+            json['objectId'] = self.object_id
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> WebDriverValue:
+        return cls(
+            type_=str(json['type']),
+            value=json['value'] if json.get('value', None) is not None else None,
+            object_id=str(json['objectId']) if json.get('objectId', None) is not None else None,
+        )
+
+
 class RemoteObjectId(str):
     '''
     Unique object identifier.
@@ -84,6 +114,9 @@ class RemoteObject:
     #: String representation of the object.
     description: typing.Optional[str] = None
 
+    #: WebDriver BiDi representation of the value.
+    web_driver_value: typing.Optional[WebDriverValue] = None
+
     #: Unique object identifier (for non-primitive values).
     object_id: typing.Optional[RemoteObjectId] = None
 
@@ -105,6 +138,8 @@ class RemoteObject:
             json['unserializableValue'] = self.unserializable_value.to_json()
         if self.description is not None:
             json['description'] = self.description
+        if self.web_driver_value is not None:
+            json['webDriverValue'] = self.web_driver_value.to_json()
         if self.object_id is not None:
             json['objectId'] = self.object_id.to_json()
         if self.preview is not None:
@@ -117,14 +152,15 @@ class RemoteObject:
     def from_json(cls, json: T_JSON_DICT) -> RemoteObject:
         return cls(
             type_=str(json['type']),
-            subtype=str(json['subtype']) if 'subtype' in json else None,
-            class_name=str(json['className']) if 'className' in json else None,
-            value=json['value'] if 'value' in json else None,
-            unserializable_value=UnserializableValue.from_json(json['unserializableValue']) if 'unserializableValue' in json else None,
-            description=str(json['description']) if 'description' in json else None,
-            object_id=RemoteObjectId.from_json(json['objectId']) if 'objectId' in json else None,
-            preview=ObjectPreview.from_json(json['preview']) if 'preview' in json else None,
-            custom_preview=CustomPreview.from_json(json['customPreview']) if 'customPreview' in json else None,
+            subtype=str(json['subtype']) if json.get('subtype', None) is not None else None,
+            class_name=str(json['className']) if json.get('className', None) is not None else None,
+            value=json['value'] if json.get('value', None) is not None else None,
+            unserializable_value=UnserializableValue.from_json(json['unserializableValue']) if json.get('unserializableValue', None) is not None else None,
+            description=str(json['description']) if json.get('description', None) is not None else None,
+            web_driver_value=WebDriverValue.from_json(json['webDriverValue']) if json.get('webDriverValue', None) is not None else None,
+            object_id=RemoteObjectId.from_json(json['objectId']) if json.get('objectId', None) is not None else None,
+            preview=ObjectPreview.from_json(json['preview']) if json.get('preview', None) is not None else None,
+            custom_preview=CustomPreview.from_json(json['customPreview']) if json.get('customPreview', None) is not None else None,
         )
 
 
@@ -150,7 +186,7 @@ class CustomPreview:
     def from_json(cls, json: T_JSON_DICT) -> CustomPreview:
         return cls(
             header=str(json['header']),
-            body_getter_id=RemoteObjectId.from_json(json['bodyGetterId']) if 'bodyGetterId' in json else None,
+            body_getter_id=RemoteObjectId.from_json(json['bodyGetterId']) if json.get('bodyGetterId', None) is not None else None,
         )
 
 
@@ -196,9 +232,9 @@ class ObjectPreview:
             type_=str(json['type']),
             overflow=bool(json['overflow']),
             properties=[PropertyPreview.from_json(i) for i in json['properties']],
-            subtype=str(json['subtype']) if 'subtype' in json else None,
-            description=str(json['description']) if 'description' in json else None,
-            entries=[EntryPreview.from_json(i) for i in json['entries']] if 'entries' in json else None,
+            subtype=str(json['subtype']) if json.get('subtype', None) is not None else None,
+            description=str(json['description']) if json.get('description', None) is not None else None,
+            entries=[EntryPreview.from_json(i) for i in json['entries']] if json.get('entries', None) is not None else None,
         )
 
 
@@ -236,9 +272,9 @@ class PropertyPreview:
         return cls(
             name=str(json['name']),
             type_=str(json['type']),
-            value=str(json['value']) if 'value' in json else None,
-            value_preview=ObjectPreview.from_json(json['valuePreview']) if 'valuePreview' in json else None,
-            subtype=str(json['subtype']) if 'subtype' in json else None,
+            value=str(json['value']) if json.get('value', None) is not None else None,
+            value_preview=ObjectPreview.from_json(json['valuePreview']) if json.get('valuePreview', None) is not None else None,
+            subtype=str(json['subtype']) if json.get('subtype', None) is not None else None,
         )
 
 
@@ -261,7 +297,7 @@ class EntryPreview:
     def from_json(cls, json: T_JSON_DICT) -> EntryPreview:
         return cls(
             value=ObjectPreview.from_json(json['value']),
-            key=ObjectPreview.from_json(json['key']) if 'key' in json else None,
+            key=ObjectPreview.from_json(json['key']) if json.get('key', None) is not None else None,
         )
 
 
@@ -331,13 +367,13 @@ class PropertyDescriptor:
             name=str(json['name']),
             configurable=bool(json['configurable']),
             enumerable=bool(json['enumerable']),
-            value=RemoteObject.from_json(json['value']) if 'value' in json else None,
-            writable=bool(json['writable']) if 'writable' in json else None,
-            get=RemoteObject.from_json(json['get']) if 'get' in json else None,
-            set_=RemoteObject.from_json(json['set']) if 'set' in json else None,
-            was_thrown=bool(json['wasThrown']) if 'wasThrown' in json else None,
-            is_own=bool(json['isOwn']) if 'isOwn' in json else None,
-            symbol=RemoteObject.from_json(json['symbol']) if 'symbol' in json else None,
+            value=RemoteObject.from_json(json['value']) if json.get('value', None) is not None else None,
+            writable=bool(json['writable']) if json.get('writable', None) is not None else None,
+            get=RemoteObject.from_json(json['get']) if json.get('get', None) is not None else None,
+            set_=RemoteObject.from_json(json['set']) if json.get('set', None) is not None else None,
+            was_thrown=bool(json['wasThrown']) if json.get('wasThrown', None) is not None else None,
+            is_own=bool(json['isOwn']) if json.get('isOwn', None) is not None else None,
+            symbol=RemoteObject.from_json(json['symbol']) if json.get('symbol', None) is not None else None,
         )
 
 
@@ -363,7 +399,7 @@ class InternalPropertyDescriptor:
     def from_json(cls, json: T_JSON_DICT) -> InternalPropertyDescriptor:
         return cls(
             name=str(json['name']),
-            value=RemoteObject.from_json(json['value']) if 'value' in json else None,
+            value=RemoteObject.from_json(json['value']) if json.get('value', None) is not None else None,
         )
 
 
@@ -401,9 +437,9 @@ class PrivatePropertyDescriptor:
     def from_json(cls, json: T_JSON_DICT) -> PrivatePropertyDescriptor:
         return cls(
             name=str(json['name']),
-            value=RemoteObject.from_json(json['value']) if 'value' in json else None,
-            get=RemoteObject.from_json(json['get']) if 'get' in json else None,
-            set_=RemoteObject.from_json(json['set']) if 'set' in json else None,
+            value=RemoteObject.from_json(json['value']) if json.get('value', None) is not None else None,
+            get=RemoteObject.from_json(json['get']) if json.get('get', None) is not None else None,
+            set_=RemoteObject.from_json(json['set']) if json.get('set', None) is not None else None,
         )
 
 
@@ -435,9 +471,9 @@ class CallArgument:
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> CallArgument:
         return cls(
-            value=json['value'] if 'value' in json else None,
-            unserializable_value=UnserializableValue.from_json(json['unserializableValue']) if 'unserializableValue' in json else None,
-            object_id=RemoteObjectId.from_json(json['objectId']) if 'objectId' in json else None,
+            value=json['value'] if json.get('value', None) is not None else None,
+            unserializable_value=UnserializableValue.from_json(json['unserializableValue']) if json.get('unserializableValue', None) is not None else None,
+            object_id=RemoteObjectId.from_json(json['objectId']) if json.get('objectId', None) is not None else None,
         )
 
 
@@ -496,7 +532,7 @@ class ExecutionContextDescription:
             origin=str(json['origin']),
             name=str(json['name']),
             unique_id=str(json['uniqueId']),
-            aux_data=dict(json['auxData']) if 'auxData' in json else None,
+            aux_data=dict(json['auxData']) if json.get('auxData', None) is not None else None,
         )
 
 
@@ -565,12 +601,12 @@ class ExceptionDetails:
             text=str(json['text']),
             line_number=int(json['lineNumber']),
             column_number=int(json['columnNumber']),
-            script_id=ScriptId.from_json(json['scriptId']) if 'scriptId' in json else None,
-            url=str(json['url']) if 'url' in json else None,
-            stack_trace=StackTrace.from_json(json['stackTrace']) if 'stackTrace' in json else None,
-            exception=RemoteObject.from_json(json['exception']) if 'exception' in json else None,
-            execution_context_id=ExecutionContextId.from_json(json['executionContextId']) if 'executionContextId' in json else None,
-            exception_meta_data=dict(json['exceptionMetaData']) if 'exceptionMetaData' in json else None,
+            script_id=ScriptId.from_json(json['scriptId']) if json.get('scriptId', None) is not None else None,
+            url=str(json['url']) if json.get('url', None) is not None else None,
+            stack_trace=StackTrace.from_json(json['stackTrace']) if json.get('stackTrace', None) is not None else None,
+            exception=RemoteObject.from_json(json['exception']) if json.get('exception', None) is not None else None,
+            execution_context_id=ExecutionContextId.from_json(json['executionContextId']) if json.get('executionContextId', None) is not None else None,
+            exception_meta_data=dict(json['exceptionMetaData']) if json.get('exceptionMetaData', None) is not None else None,
         )
 
 
@@ -677,9 +713,9 @@ class StackTrace:
     def from_json(cls, json: T_JSON_DICT) -> StackTrace:
         return cls(
             call_frames=[CallFrame.from_json(i) for i in json['callFrames']],
-            description=str(json['description']) if 'description' in json else None,
-            parent=StackTrace.from_json(json['parent']) if 'parent' in json else None,
-            parent_id=StackTraceId.from_json(json['parentId']) if 'parentId' in json else None,
+            description=str(json['description']) if json.get('description', None) is not None else None,
+            parent=StackTrace.from_json(json['parent']) if json.get('parent', None) is not None else None,
+            parent_id=StackTraceId.from_json(json['parentId']) if json.get('parentId', None) is not None else None,
         )
 
 
@@ -719,7 +755,7 @@ class StackTraceId:
     def from_json(cls, json: T_JSON_DICT) -> StackTraceId:
         return cls(
             id_=str(json['id']),
-            debugger_id=UniqueDebuggerId.from_json(json['debuggerId']) if 'debuggerId' in json else None,
+            debugger_id=UniqueDebuggerId.from_json(json['debuggerId']) if json.get('debuggerId', None) is not None else None,
         )
 
 
@@ -752,7 +788,7 @@ def await_promise(
     json = yield cmd_dict
     return (
         RemoteObject.from_json(json['result']),
-        ExceptionDetails.from_json(json['exceptionDetails']) if 'exceptionDetails' in json else None
+        ExceptionDetails.from_json(json['exceptionDetails']) if json.get('exceptionDetails', None) is not None else None
     )
 
 
@@ -767,7 +803,9 @@ def call_function_on(
         await_promise: typing.Optional[bool] = None,
         execution_context_id: typing.Optional[ExecutionContextId] = None,
         object_group: typing.Optional[str] = None,
-        throw_on_side_effect: typing.Optional[bool] = None
+        throw_on_side_effect: typing.Optional[bool] = None,
+        unique_context_id: typing.Optional[str] = None,
+        generate_web_driver_value: typing.Optional[bool] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.Tuple[RemoteObject, typing.Optional[ExceptionDetails]]]:
     '''
     Calls function with given declaration on the given object. Object group of the result is
@@ -780,10 +818,12 @@ def call_function_on(
     :param return_by_value: *(Optional)* Whether the result is expected to be a JSON object which should be sent by value.
     :param generate_preview: **(EXPERIMENTAL)** *(Optional)* Whether preview should be generated for the result.
     :param user_gesture: *(Optional)* Whether execution should be treated as initiated by user in the UI.
-    :param await_promise: *(Optional)* Whether execution should ````await``` for resulting value and return once awaited promise is resolved.
+    :param await_promise: *(Optional)* Whether execution should ````await```` for resulting value and return once awaited promise is resolved.
     :param execution_context_id: *(Optional)* Specifies execution context which global object will be used to call function on. Either executionContextId or objectId should be specified.
     :param object_group: *(Optional)* Symbolic group name that can be used to release multiple objects. If objectGroup is not specified and objectId is, objectGroup will be inherited from object.
     :param throw_on_side_effect: **(EXPERIMENTAL)** *(Optional)* Whether to throw an exception if side effect cannot be ruled out during evaluation.
+    :param unique_context_id: **(EXPERIMENTAL)** *(Optional)* An alternative way to specify the execution context to call function on. Compared to contextId that may be reused across processes, this is guaranteed to be system-unique, so it can be used to prevent accidental function call in context different than intended (e.g. as a result of navigation across process boundaries). This is mutually exclusive with ````executionContextId````.
+    :param generate_web_driver_value: **(EXPERIMENTAL)** *(Optional)* Whether the result should contain ````webDriverValue````, serialized according to https://w3c.github.io/webdriver-bidi. This is mutually exclusive with ````returnByValue````, but resulting ````objectId``` is still provided.
     :returns: A tuple with the following items:
 
         0. **result** - Call result.
@@ -811,6 +851,10 @@ def call_function_on(
         params['objectGroup'] = object_group
     if throw_on_side_effect is not None:
         params['throwOnSideEffect'] = throw_on_side_effect
+    if unique_context_id is not None:
+        params['uniqueContextId'] = unique_context_id
+    if generate_web_driver_value is not None:
+        params['generateWebDriverValue'] = generate_web_driver_value
     cmd_dict: T_JSON_DICT = {
         'method': 'Runtime.callFunctionOn',
         'params': params,
@@ -818,7 +862,7 @@ def call_function_on(
     json = yield cmd_dict
     return (
         RemoteObject.from_json(json['result']),
-        ExceptionDetails.from_json(json['exceptionDetails']) if 'exceptionDetails' in json else None
+        ExceptionDetails.from_json(json['exceptionDetails']) if json.get('exceptionDetails', None) is not None else None
     )
 
 
@@ -852,8 +896,8 @@ def compile_script(
     }
     json = yield cmd_dict
     return (
-        ScriptId.from_json(json['scriptId']) if 'scriptId' in json else None,
-        ExceptionDetails.from_json(json['exceptionDetails']) if 'exceptionDetails' in json else None
+        ScriptId.from_json(json['scriptId']) if json.get('scriptId', None) is not None else None,
+        ExceptionDetails.from_json(json['exceptionDetails']) if json.get('exceptionDetails', None) is not None else None
     )
 
 
@@ -904,7 +948,8 @@ def evaluate(
         disable_breaks: typing.Optional[bool] = None,
         repl_mode: typing.Optional[bool] = None,
         allow_unsafe_eval_blocked_by_csp: typing.Optional[bool] = None,
-        unique_context_id: typing.Optional[str] = None
+        unique_context_id: typing.Optional[str] = None,
+        generate_web_driver_value: typing.Optional[bool] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.Tuple[RemoteObject, typing.Optional[ExceptionDetails]]]:
     '''
     Evaluates expression on global object.
@@ -924,6 +969,7 @@ def evaluate(
     :param repl_mode: **(EXPERIMENTAL)** *(Optional)* Setting this flag to true enables ````let```` re-declaration and top-level ````await````. Note that ````let```` variables can only be re-declared if they originate from ````replMode```` themselves.
     :param allow_unsafe_eval_blocked_by_csp: **(EXPERIMENTAL)** *(Optional)* The Content Security Policy (CSP) for the target might block 'unsafe-eval' which includes eval(), Function(), setTimeout() and setInterval() when called with non-callable arguments. This flag bypasses CSP for this evaluation and allows unsafe-eval. Defaults to true.
     :param unique_context_id: **(EXPERIMENTAL)** *(Optional)* An alternative way to specify the execution context to evaluate in. Compared to contextId that may be reused across processes, this is guaranteed to be system-unique, so it can be used to prevent accidental evaluation of the expression in context different than intended (e.g. as a result of navigation across process boundaries). This is mutually exclusive with ````contextId```.
+    :param generate_web_driver_value: **(EXPERIMENTAL)** *(Optional)* Whether the result should be serialized according to https://w3c.github.io/webdriver-bidi.
     :returns: A tuple with the following items:
 
         0. **result** - Evaluation result.
@@ -959,6 +1005,8 @@ def evaluate(
         params['allowUnsafeEvalBlockedByCSP'] = allow_unsafe_eval_blocked_by_csp
     if unique_context_id is not None:
         params['uniqueContextId'] = unique_context_id
+    if generate_web_driver_value is not None:
+        params['generateWebDriverValue'] = generate_web_driver_value
     cmd_dict: T_JSON_DICT = {
         'method': 'Runtime.evaluate',
         'params': params,
@@ -966,7 +1014,7 @@ def evaluate(
     json = yield cmd_dict
     return (
         RemoteObject.from_json(json['result']),
-        ExceptionDetails.from_json(json['exceptionDetails']) if 'exceptionDetails' in json else None
+        ExceptionDetails.from_json(json['exceptionDetails']) if json.get('exceptionDetails', None) is not None else None
     )
 
 
@@ -1047,9 +1095,9 @@ def get_properties(
     json = yield cmd_dict
     return (
         [PropertyDescriptor.from_json(i) for i in json['result']],
-        [InternalPropertyDescriptor.from_json(i) for i in json['internalProperties']] if 'internalProperties' in json else None,
-        [PrivatePropertyDescriptor.from_json(i) for i in json['privateProperties']] if 'privateProperties' in json else None,
-        ExceptionDetails.from_json(json['exceptionDetails']) if 'exceptionDetails' in json else None
+        [InternalPropertyDescriptor.from_json(i) for i in json['internalProperties']] if json.get('internalProperties', None) is not None else None,
+        [PrivatePropertyDescriptor.from_json(i) for i in json['privateProperties']] if json.get('privateProperties', None) is not None else None,
+        ExceptionDetails.from_json(json['exceptionDetails']) if json.get('exceptionDetails', None) is not None else None
     )
 
 
@@ -1187,7 +1235,7 @@ def run_script(
     json = yield cmd_dict
     return (
         RemoteObject.from_json(json['result']),
-        ExceptionDetails.from_json(json['exceptionDetails']) if 'exceptionDetails' in json else None
+        ExceptionDetails.from_json(json['exceptionDetails']) if json.get('exceptionDetails', None) is not None else None
     )
 
 
@@ -1311,6 +1359,31 @@ def remove_binding(
     json = yield cmd_dict
 
 
+def get_exception_details(
+        error_object_id: RemoteObjectId
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.Optional[ExceptionDetails]]:
+    '''
+    This method tries to lookup and populate exception details for a
+    JavaScript Error object.
+    Note that the stackTrace portion of the resulting exceptionDetails will
+    only be populated if the Runtime domain was enabled at the time when the
+    Error was thrown.
+
+    **EXPERIMENTAL**
+
+    :param error_object_id: The error object for which to resolve the exception details.
+    :returns: 
+    '''
+    params: T_JSON_DICT = dict()
+    params['errorObjectId'] = error_object_id.to_json()
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Runtime.getExceptionDetails',
+        'params': params,
+    }
+    json = yield cmd_dict
+    return ExceptionDetails.from_json(json['exceptionDetails']) if json.get('exceptionDetails', None) is not None else None
+
+
 @event_class('Runtime.bindingCalled')
 @dataclass
 class BindingCalled:
@@ -1363,8 +1436,8 @@ class ConsoleAPICalled:
             args=[RemoteObject.from_json(i) for i in json['args']],
             execution_context_id=ExecutionContextId.from_json(json['executionContextId']),
             timestamp=Timestamp.from_json(json['timestamp']),
-            stack_trace=StackTrace.from_json(json['stackTrace']) if 'stackTrace' in json else None,
-            context=str(json['context']) if 'context' in json else None
+            stack_trace=StackTrace.from_json(json['stackTrace']) if json.get('stackTrace', None) is not None else None,
+            context=str(json['context']) if json.get('context', None) is not None else None
         )
 
 
@@ -1429,11 +1502,14 @@ class ExecutionContextDestroyed:
     '''
     #: Id of the destroyed context
     execution_context_id: ExecutionContextId
+    #: Unique Id of the destroyed context
+    execution_context_unique_id: str
 
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> ExecutionContextDestroyed:
         return cls(
-            execution_context_id=ExecutionContextId.from_json(json['executionContextId'])
+            execution_context_id=ExecutionContextId.from_json(json['executionContextId']),
+            execution_context_unique_id=str(json['executionContextUniqueId'])
         )
 
 
@@ -1469,5 +1545,5 @@ class InspectRequested:
         return cls(
             object_=RemoteObject.from_json(json['object']),
             hints=dict(json['hints']),
-            execution_context_id=ExecutionContextId.from_json(json['executionContextId']) if 'executionContextId' in json else None
+            execution_context_id=ExecutionContextId.from_json(json['executionContextId']) if json.get('executionContextId', None) is not None else None
         )

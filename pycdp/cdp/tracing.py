@@ -34,6 +34,10 @@ class TraceConfig:
     #: Controls how the trace buffer stores data.
     record_mode: typing.Optional[str] = None
 
+    #: Size of the trace buffer in kilobytes. If not specified or zero is passed, a default value
+    #: of 200 MB would be used.
+    trace_buffer_size_in_kb: typing.Optional[float] = None
+
     #: Turns on JavaScript stack sampling.
     enable_sampling: typing.Optional[bool] = None
 
@@ -59,6 +63,8 @@ class TraceConfig:
         json: T_JSON_DICT = dict()
         if self.record_mode is not None:
             json['recordMode'] = self.record_mode
+        if self.trace_buffer_size_in_kb is not None:
+            json['traceBufferSizeInKb'] = self.trace_buffer_size_in_kb
         if self.enable_sampling is not None:
             json['enableSampling'] = self.enable_sampling
         if self.enable_systrace is not None:
@@ -78,14 +84,15 @@ class TraceConfig:
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> TraceConfig:
         return cls(
-            record_mode=str(json['recordMode']) if 'recordMode' in json else None,
-            enable_sampling=bool(json['enableSampling']) if 'enableSampling' in json else None,
-            enable_systrace=bool(json['enableSystrace']) if 'enableSystrace' in json else None,
-            enable_argument_filter=bool(json['enableArgumentFilter']) if 'enableArgumentFilter' in json else None,
-            included_categories=[str(i) for i in json['includedCategories']] if 'includedCategories' in json else None,
-            excluded_categories=[str(i) for i in json['excludedCategories']] if 'excludedCategories' in json else None,
-            synthetic_delays=[str(i) for i in json['syntheticDelays']] if 'syntheticDelays' in json else None,
-            memory_dump_config=MemoryDumpConfig.from_json(json['memoryDumpConfig']) if 'memoryDumpConfig' in json else None,
+            record_mode=str(json['recordMode']) if json.get('recordMode', None) is not None else None,
+            trace_buffer_size_in_kb=float(json['traceBufferSizeInKb']) if json.get('traceBufferSizeInKb', None) is not None else None,
+            enable_sampling=bool(json['enableSampling']) if json.get('enableSampling', None) is not None else None,
+            enable_systrace=bool(json['enableSystrace']) if json.get('enableSystrace', None) is not None else None,
+            enable_argument_filter=bool(json['enableArgumentFilter']) if json.get('enableArgumentFilter', None) is not None else None,
+            included_categories=[str(i) for i in json['includedCategories']] if json.get('includedCategories', None) is not None else None,
+            excluded_categories=[str(i) for i in json['excludedCategories']] if json.get('excludedCategories', None) is not None else None,
+            synthetic_delays=[str(i) for i in json['syntheticDelays']] if json.get('syntheticDelays', None) is not None else None,
+            memory_dump_config=MemoryDumpConfig.from_json(json['memoryDumpConfig']) if json.get('memoryDumpConfig', None) is not None else None,
         )
 
 
@@ -293,9 +300,9 @@ class BufferUsage:
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> BufferUsage:
         return cls(
-            percent_full=float(json['percentFull']) if 'percentFull' in json else None,
-            event_count=float(json['eventCount']) if 'eventCount' in json else None,
-            value=float(json['value']) if 'value' in json else None
+            percent_full=float(json['percentFull']) if json.get('percentFull', None) is not None else None,
+            event_count=float(json['eventCount']) if json.get('eventCount', None) is not None else None,
+            value=float(json['value']) if json.get('value', None) is not None else None
         )
 
 
@@ -303,8 +310,8 @@ class BufferUsage:
 @dataclass
 class DataCollected:
     '''
-    Contains an bucket of collected trace events. When tracing is stopped collected events will be
-    send as a sequence of dataCollected events followed by tracingComplete event.
+    Contains a bucket of collected trace events. When tracing is stopped collected events will be
+    sent as a sequence of dataCollected events followed by tracingComplete event.
     '''
     value: typing.List[dict]
 
@@ -336,7 +343,7 @@ class TracingComplete:
     def from_json(cls, json: T_JSON_DICT) -> TracingComplete:
         return cls(
             data_loss_occurred=bool(json['dataLossOccurred']),
-            stream=io.StreamHandle.from_json(json['stream']) if 'stream' in json else None,
-            trace_format=StreamFormat.from_json(json['traceFormat']) if 'traceFormat' in json else None,
-            stream_compression=StreamCompression.from_json(json['streamCompression']) if 'streamCompression' in json else None
+            stream=io.StreamHandle.from_json(json['stream']) if json.get('stream', None) is not None else None,
+            trace_format=StreamFormat.from_json(json['traceFormat']) if json.get('traceFormat', None) is not None else None,
+            stream_compression=StreamCompression.from_json(json['streamCompression']) if json.get('streamCompression', None) is not None else None
         )

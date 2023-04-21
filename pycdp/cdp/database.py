@@ -129,9 +129,9 @@ def execute_sql(
     }
     json = yield cmd_dict
     return (
-        [str(i) for i in json['columnNames']] if 'columnNames' in json else None,
-        [i for i in json['values']] if 'values' in json else None,
-        Error.from_json(json['sqlError']) if 'sqlError' in json else None
+        [str(i) for i in json['columnNames']] if json.get('columnNames', None) is not None else None,
+        [i for i in json['values']] if json.get('values', None) is not None else None,
+        Error.from_json(json['sqlError']) if json.get('sqlError', None) is not None else None
     )
 
 

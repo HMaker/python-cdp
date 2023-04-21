@@ -67,6 +67,10 @@ class TargetInfo:
 
     browser_context_id: typing.Optional[browser.BrowserContextID] = None
 
+    #: Provides additional details for specific target types. For example, for
+    #: the type of "page", this may be set to "portal" or "prerender".
+    subtype: typing.Optional[str] = None
+
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
         json['targetId'] = self.target_id.to_json()
@@ -81,6 +85,8 @@ class TargetInfo:
             json['openerFrameId'] = self.opener_frame_id.to_json()
         if self.browser_context_id is not None:
             json['browserContextId'] = self.browser_context_id.to_json()
+        if self.subtype is not None:
+            json['subtype'] = self.subtype
         return json
 
     @classmethod
@@ -92,10 +98,58 @@ class TargetInfo:
             url=str(json['url']),
             attached=bool(json['attached']),
             can_access_opener=bool(json['canAccessOpener']),
-            opener_id=TargetID.from_json(json['openerId']) if 'openerId' in json else None,
-            opener_frame_id=page.FrameId.from_json(json['openerFrameId']) if 'openerFrameId' in json else None,
-            browser_context_id=browser.BrowserContextID.from_json(json['browserContextId']) if 'browserContextId' in json else None,
+            opener_id=TargetID.from_json(json['openerId']) if json.get('openerId', None) is not None else None,
+            opener_frame_id=page.FrameId.from_json(json['openerFrameId']) if json.get('openerFrameId', None) is not None else None,
+            browser_context_id=browser.BrowserContextID.from_json(json['browserContextId']) if json.get('browserContextId', None) is not None else None,
+            subtype=str(json['subtype']) if json.get('subtype', None) is not None else None,
         )
+
+
+@dataclass
+class FilterEntry:
+    '''
+    A filter used by target query/discovery/auto-attach operations.
+    '''
+    #: If set, causes exclusion of mathcing targets from the list.
+    exclude: typing.Optional[bool] = None
+
+    #: If not present, matches any type.
+    type_: typing.Optional[str] = None
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        if self.exclude is not None:
+            json['exclude'] = self.exclude
+        if self.type_ is not None:
+            json['type'] = self.type_
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> FilterEntry:
+        return cls(
+            exclude=bool(json['exclude']) if json.get('exclude', None) is not None else None,
+            type_=str(json['type']) if json.get('type', None) is not None else None,
+        )
+
+
+class TargetFilter(list):
+    '''
+    The entries in TargetFilter are matched sequentially against targets and
+    the first entry that matches determines if the target is included or not,
+    depending on the value of ``exclude`` field in the entry.
+    If filter is not specified, the one assumed is
+    [{type: "browser", exclude: true}, {type: "tab", exclude: true}, {}]
+    (i.e. include everything but ``browser`` and ``tab``).
+    '''
+    def to_json(self) -> typing.List[FilterEntry]:
+        return self
+
+    @classmethod
+    def from_json(cls, json: typing.List[FilterEntry]) -> TargetFilter:
+        return cls(json)
+
+    def __repr__(self):
+        return 'TargetFilter({})'.format(super().__repr__())
 
 
 @dataclass
@@ -279,7 +333,8 @@ def create_target(
         browser_context_id: typing.Optional[browser.BrowserContextID] = None,
         enable_begin_frame_control: typing.Optional[bool] = None,
         new_window: typing.Optional[bool] = None,
-        background: typing.Optional[bool] = None
+        background: typing.Optional[bool] = None,
+        for_tab: typing.Optional[bool] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,TargetID]:
     '''
     Creates a new page.
@@ -291,6 +346,7 @@ def create_target(
     :param enable_begin_frame_control: **(EXPERIMENTAL)** *(Optional)* Whether BeginFrames for this target will be controlled via DevTools (headless chrome only, not supported on MacOS yet, false by default).
     :param new_window: *(Optional)* Whether to create a new Window or Tab (chrome-only, false by default).
     :param background: *(Optional)* Whether to create the target in background or foreground (chrome-only, false by default).
+    :param for_tab: **(EXPERIMENTAL)** *(Optional)* Whether to create the target of type "tab".
     :returns: The id of the page opened.
     '''
     params: T_JSON_DICT = dict()
@@ -307,6 +363,8 @@ def create_target(
         params['newWindow'] = new_window
     if background is not None:
         params['background'] = background
+    if for_tab is not None:
+        params['forTab'] = for_tab
     cmd_dict: T_JSON_DICT = {
         'method': 'Target.createTarget',
         'params': params,
@@ -379,14 +437,21 @@ def get_target_info(
     return TargetInfo.from_json(json['targetInfo'])
 
 
-def get_targets() -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.List[TargetInfo]]:
+def get_targets(
+        filter_: typing.Optional[TargetFilter] = None
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.List[TargetInfo]]:
     '''
     Retrieves a list of available targets.
 
+    :param filter_: **(EXPERIMENTAL)** *(Optional)* Only targets matching filter will be reported. If filter is not specified and target discovery is currently enabled, a filter used for target discovery is used for consistency.
     :returns: The list of targets.
     '''
+    params: T_JSON_DICT = dict()
+    if filter_ is not None:
+        params['filter'] = filter_.to_json()
     cmd_dict: T_JSON_DICT = {
         'method': 'Target.getTargets',
+        'params': params,
     }
     json = yield cmd_dict
     return [TargetInfo.from_json(i) for i in json['targetInfos']]
@@ -425,7 +490,8 @@ def send_message_to_target(
 def set_auto_attach(
         auto_attach: bool,
         wait_for_debugger_on_start: bool,
-        flatten: typing.Optional[bool] = None
+        flatten: typing.Optional[bool] = None,
+        filter_: typing.Optional[TargetFilter] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
     '''
     Controls whether to automatically attach to new targets which are considered to be related to
@@ -439,12 +505,15 @@ def set_auto_attach(
     :param auto_attach: Whether to auto-attach to related targets.
     :param wait_for_debugger_on_start: Whether to pause new targets when attaching to them. Use ```Runtime.runIfWaitingForDebugger``` to run paused targets.
     :param flatten: *(Optional)* Enables "flat" access to the session via specifying sessionId attribute in the commands. We plan to make this the default, deprecate non-flattened mode, and eventually retire it. See crbug.com/991325.
+    :param filter_: **(EXPERIMENTAL)** *(Optional)* Only targets matching filter will be attached.
     '''
     params: T_JSON_DICT = dict()
     params['autoAttach'] = auto_attach
     params['waitForDebuggerOnStart'] = wait_for_debugger_on_start
     if flatten is not None:
         params['flatten'] = flatten
+    if filter_ is not None:
+        params['filter'] = filter_.to_json()
     cmd_dict: T_JSON_DICT = {
         'method': 'Target.setAutoAttach',
         'params': params,
@@ -454,7 +523,8 @@ def set_auto_attach(
 
 def auto_attach_related(
         target_id: TargetID,
-        wait_for_debugger_on_start: bool
+        wait_for_debugger_on_start: bool,
+        filter_: typing.Optional[TargetFilter] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
     '''
     Adds the specified target to the list of targets that will be monitored for any related target
@@ -467,10 +537,13 @@ def auto_attach_related(
 
     :param target_id:
     :param wait_for_debugger_on_start: Whether to pause new targets when attaching to them. Use ```Runtime.runIfWaitingForDebugger``` to run paused targets.
+    :param filter_: **(EXPERIMENTAL)** *(Optional)* Only targets matching filter will be attached.
     '''
     params: T_JSON_DICT = dict()
     params['targetId'] = target_id.to_json()
     params['waitForDebuggerOnStart'] = wait_for_debugger_on_start
+    if filter_ is not None:
+        params['filter'] = filter_.to_json()
     cmd_dict: T_JSON_DICT = {
         'method': 'Target.autoAttachRelated',
         'params': params,
@@ -479,16 +552,20 @@ def auto_attach_related(
 
 
 def set_discover_targets(
-        discover: bool
+        discover: bool,
+        filter_: typing.Optional[TargetFilter] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
     '''
     Controls whether to discover available targets and notify via
     ``targetCreated/targetInfoChanged/targetDestroyed`` events.
 
     :param discover: Whether to discover available targets.
+    :param filter_: **(EXPERIMENTAL)** *(Optional)* Only targets matching filter will be attached. If ```discover```` is false, ````filter``` must be omitted or empty.
     '''
     params: T_JSON_DICT = dict()
     params['discover'] = discover
+    if filter_ is not None:
+        params['filter'] = filter_.to_json()
     cmd_dict: T_JSON_DICT = {
         'method': 'Target.setDiscoverTargets',
         'params': params,
@@ -556,7 +633,7 @@ class DetachedFromTarget:
     def from_json(cls, json: T_JSON_DICT) -> DetachedFromTarget:
         return cls(
             session_id=SessionID.from_json(json['sessionId']),
-            target_id=TargetID.from_json(json['targetId']) if 'targetId' in json else None
+            target_id=TargetID.from_json(json['targetId']) if json.get('targetId', None) is not None else None
         )
 
 
@@ -578,7 +655,7 @@ class ReceivedMessageFromTarget:
         return cls(
             session_id=SessionID.from_json(json['sessionId']),
             message=str(json['message']),
-            target_id=TargetID.from_json(json['targetId']) if 'targetId' in json else None
+            target_id=TargetID.from_json(json['targetId']) if json.get('targetId', None) is not None else None
         )
 
 

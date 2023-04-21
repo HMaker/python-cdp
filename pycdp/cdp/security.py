@@ -168,9 +168,9 @@ class CertificateSecurityState:
             obsolete_ssl_key_exchange=bool(json['obsoleteSslKeyExchange']),
             obsolete_ssl_cipher=bool(json['obsoleteSslCipher']),
             obsolete_ssl_signature=bool(json['obsoleteSslSignature']),
-            key_exchange_group=str(json['keyExchangeGroup']) if 'keyExchangeGroup' in json else None,
-            mac=str(json['mac']) if 'mac' in json else None,
-            certificate_network_error=str(json['certificateNetworkError']) if 'certificateNetworkError' in json else None,
+            key_exchange_group=str(json['keyExchangeGroup']) if json.get('keyExchangeGroup', None) is not None else None,
+            mac=str(json['mac']) if json.get('mac', None) is not None else None,
+            certificate_network_error=str(json['certificateNetworkError']) if json.get('certificateNetworkError', None) is not None else None,
         )
 
 
@@ -205,7 +205,7 @@ class SafetyTipInfo:
     def from_json(cls, json: T_JSON_DICT) -> SafetyTipInfo:
         return cls(
             safety_tip_status=SafetyTipStatus.from_json(json['safetyTipStatus']),
-            safe_url=str(json['safeUrl']) if 'safeUrl' in json else None,
+            safe_url=str(json['safeUrl']) if json.get('safeUrl', None) is not None else None,
         )
 
 
@@ -241,8 +241,8 @@ class VisibleSecurityState:
         return cls(
             security_state=SecurityState.from_json(json['securityState']),
             security_state_issue_ids=[str(i) for i in json['securityStateIssueIds']],
-            certificate_security_state=CertificateSecurityState.from_json(json['certificateSecurityState']) if 'certificateSecurityState' in json else None,
-            safety_tip_info=SafetyTipInfo.from_json(json['safetyTipInfo']) if 'safetyTipInfo' in json else None,
+            certificate_security_state=CertificateSecurityState.from_json(json['certificateSecurityState']) if json.get('certificateSecurityState', None) is not None else None,
+            safety_tip_info=SafetyTipInfo.from_json(json['safetyTipInfo']) if json.get('safetyTipInfo', None) is not None else None,
         )
 
 
@@ -293,7 +293,7 @@ class SecurityStateExplanation:
             description=str(json['description']),
             mixed_content_type=MixedContentType.from_json(json['mixedContentType']),
             certificate=[str(i) for i in json['certificate']],
-            recommendations=[str(i) for i in json['recommendations']] if 'recommendations' in json else None,
+            recommendations=[str(i) for i in json['recommendations']] if json.get('recommendations', None) is not None else None,
         )
 
 
@@ -516,5 +516,5 @@ class SecurityStateChanged:
             scheme_is_cryptographic=bool(json['schemeIsCryptographic']),
             explanations=[SecurityStateExplanation.from_json(i) for i in json['explanations']],
             insecure_content_status=InsecureContentStatus.from_json(json['insecureContentStatus']),
-            summary=str(json['summary']) if 'summary' in json else None
+            summary=str(json['summary']) if json.get('summary', None) is not None else None
         )
