@@ -20,10 +20,18 @@ generate_cdp_classes() {
     fi
 }
 
+delete_devtools_directory() {
+    if [ -d "devtools-protocol" ]; then
+        rm -r devtools-protocol
+        echo "Deleted devtools-protocol folder"
+    fi
+}
+
 main() {
     clean_devtools_directory
     download_protocol_files
     generate_cdp_classes
+    delete_devtools_directory
 }
 
 main
