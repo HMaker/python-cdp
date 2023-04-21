@@ -34,22 +34,22 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
-.. autoclass:: SameSiteCookieExclusionReason
+.. autoclass:: CookieExclusionReason
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
 
-.. autoclass:: SameSiteCookieWarningReason
+.. autoclass:: CookieWarningReason
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
 
-.. autoclass:: SameSiteCookieOperation
+.. autoclass:: CookieOperation
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
 
-.. autoclass:: SameSiteCookieIssueDetails
+.. autoclass:: CookieIssueDetails
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
@@ -170,6 +170,11 @@ arguments to other commands.
       :exclude-members: from_json, to_json
 
 .. autoclass:: DeprecationIssueDetails
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: BounceTrackingIssueDetails
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json

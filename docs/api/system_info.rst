@@ -76,6 +76,8 @@ commands, and ``z`` is the return type you should pay attention
 to. For more information, see
 :ref:`Getting Started: Commands <getting-started-commands>`.
 
+.. autofunction:: get_feature_state
+
 .. autofunction:: get_info
 
 .. autofunction:: get_process_info

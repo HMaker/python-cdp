@@ -37,6 +37,11 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: AdScriptId
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: SecureContextType
       :members:
       :undoc-members:
@@ -217,6 +222,11 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: AutoResponseMode
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: NavigationType
       :members:
       :undoc-members:
@@ -288,6 +298,8 @@ to. For more information, see
 
 .. autofunction:: generate_test_report
 
+.. autofunction:: get_ad_script_id
+
 .. autofunction:: get_app_id
 
 .. autofunction:: get_app_manifest
@@ -355,6 +367,8 @@ to. For more information, see
 .. autofunction:: set_intercept_file_chooser_dialog
 
 .. autofunction:: set_lifecycle_events_enabled
+
+.. autofunction:: set_rph_registration_mode
 
 .. autofunction:: set_spc_transaction_mode
 

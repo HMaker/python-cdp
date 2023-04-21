@@ -26,6 +26,11 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: WebDriverValue
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: RemoteObjectId
       :members:
       :undoc-members:
@@ -153,6 +158,8 @@ to. For more information, see
 .. autofunction:: enable
 
 .. autofunction:: evaluate
+
+.. autofunction:: get_exception_details
 
 .. autofunction:: get_heap_usage
 
