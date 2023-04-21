@@ -44,6 +44,11 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: InheritedPseudoElementMatches
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: RuleMatch
       :members:
       :undoc-members:
@@ -124,6 +129,21 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: CSSScope
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: CSSLayer
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: CSSLayerData
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: PlatformFontUsage
       :members:
       :undoc-members:
@@ -135,6 +155,16 @@ arguments to other commands.
       :exclude-members: from_json, to_json
 
 .. autoclass:: FontFace
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: CSSTryRule
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: CSSPositionFallbackRule
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
@@ -184,6 +214,8 @@ to. For more information, see
 
 .. autofunction:: get_inline_styles_for_node
 
+.. autofunction:: get_layers_for_node
+
 .. autofunction:: get_matched_styles_for_node
 
 .. autofunction:: get_media_queries
@@ -203,6 +235,8 @@ to. For more information, see
 .. autofunction:: set_media_text
 
 .. autofunction:: set_rule_selector
+
+.. autofunction:: set_scope_text
 
 .. autofunction:: set_style_sheet_text
 

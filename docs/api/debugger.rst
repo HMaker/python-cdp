@@ -63,6 +63,11 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: WasmDisassemblyChunk
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: ScriptLanguage
       :members:
       :undoc-members:
@@ -89,6 +94,8 @@ to. For more information, see
 
 .. autofunction:: disable
 
+.. autofunction:: disassemble_wasm_module
+
 .. autofunction:: enable
 
 .. autofunction:: evaluate_on_call_frame
@@ -100,6 +107,8 @@ to. For more information, see
 .. autofunction:: get_stack_trace
 
 .. autofunction:: get_wasm_bytecode
+
+.. autofunction:: next_wasm_disassembly_chunk
 
 .. autofunction:: pause
 

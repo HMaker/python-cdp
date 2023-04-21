@@ -44,6 +44,11 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: PlayerErrorSourceLocation
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: PlayerError
       :members:
       :undoc-members:

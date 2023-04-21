@@ -1021,7 +1021,7 @@ def selfgen():
             module_file.write(domain.generate_code())
 
     generate_init(output_path / '__init__.py', domains)
-    generate_docs(here.parent / 'docs' / 'api', domains)
+    generate_docs(here.parent.parent / 'docs' / 'api', domains)
     (output_path / 'README.md').write_text(GENERATED_PACKAGE_NOTICE)
     (output_path / 'py.typed').touch()
 

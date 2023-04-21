@@ -76,6 +76,8 @@ to. For more information, see
 
 .. autofunction:: set_auto_dark_mode_override
 
+.. autofunction:: set_automation_override
+
 .. autofunction:: set_cpu_throttling_rate
 
 .. autofunction:: set_default_background_color_override
@@ -95,6 +97,8 @@ to. For more information, see
 .. autofunction:: set_focus_emulation_enabled
 
 .. autofunction:: set_geolocation_override
+
+.. autofunction:: set_hardware_concurrency_override
 
 .. autofunction:: set_idle_override
 

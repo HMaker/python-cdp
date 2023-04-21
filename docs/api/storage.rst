@@ -17,6 +17,11 @@ yourself. Instead, the API creates objects for you as return
 values from commands, and then you can use those objects as
 arguments to other commands.
 
+.. autoclass:: SerializedStorageKey
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: StorageType
       :members:
       :undoc-members:
@@ -47,6 +52,46 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: SharedStorageAccessType
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: SharedStorageEntry
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: SharedStorageMetadata
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: SharedStorageReportingMetadata
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: SharedStorageUrlWithMetadata
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: SharedStorageAccessParams
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: StorageBucketsDurability
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: StorageBucketInfo
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 Commands
 --------
 
@@ -63,11 +108,25 @@ to. For more information, see
 
 .. autofunction:: clear_data_for_origin
 
+.. autofunction:: clear_data_for_storage_key
+
+.. autofunction:: clear_shared_storage_entries
+
 .. autofunction:: clear_trust_tokens
+
+.. autofunction:: delete_shared_storage_entry
+
+.. autofunction:: delete_storage_bucket
 
 .. autofunction:: get_cookies
 
 .. autofunction:: get_interest_group_details
+
+.. autofunction:: get_shared_storage_entries
+
+.. autofunction:: get_shared_storage_metadata
+
+.. autofunction:: get_storage_key_for_frame
 
 .. autofunction:: get_trust_tokens
 
@@ -75,17 +134,33 @@ to. For more information, see
 
 .. autofunction:: override_quota_for_origin
 
+.. autofunction:: reset_shared_storage_budget
+
 .. autofunction:: set_cookies
 
 .. autofunction:: set_interest_group_tracking
 
+.. autofunction:: set_shared_storage_entry
+
+.. autofunction:: set_shared_storage_tracking
+
+.. autofunction:: set_storage_bucket_tracking
+
 .. autofunction:: track_cache_storage_for_origin
+
+.. autofunction:: track_cache_storage_for_storage_key
 
 .. autofunction:: track_indexed_db_for_origin
 
+.. autofunction:: track_indexed_db_for_storage_key
+
 .. autofunction:: untrack_cache_storage_for_origin
 
+.. autofunction:: untrack_cache_storage_for_storage_key
+
 .. autofunction:: untrack_indexed_db_for_origin
+
+.. autofunction:: untrack_indexed_db_for_storage_key
 
 Events
 ------
@@ -115,6 +190,21 @@ you use the event's attributes.
       :exclude-members: from_json, to_json
 
 .. autoclass:: InterestGroupAccessed
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: SharedStorageAccessed
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: StorageBucketCreatedOrUpdated
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: StorageBucketDeleted
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json

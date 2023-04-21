@@ -53,6 +53,16 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: PhysicalAxes
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: LogicalAxes
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: Node
       :members:
       :undoc-members:
@@ -143,6 +153,8 @@ to. For more information, see
 .. autofunction:: get_relayout_boundary
 
 .. autofunction:: get_search_results
+
+.. autofunction:: get_top_layer_elements
 
 .. autofunction:: hide_highlight
 
@@ -249,6 +261,11 @@ you use the event's attributes.
       :exclude-members: from_json, to_json
 
 .. autoclass:: PseudoElementAdded
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: TopLayerElementsUpdated
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
