@@ -254,6 +254,8 @@ class PrerenderFinalStatus(enum.Enum):
     CROSS_SITE_NAVIGATION_IN_MAIN_FRAME_NAVIGATION = "CrossSiteNavigationInMainFrameNavigation"
     SAME_SITE_CROSS_ORIGIN_REDIRECT_NOT_OPT_IN_IN_MAIN_FRAME_NAVIGATION = "SameSiteCrossOriginRedirectNotOptInInMainFrameNavigation"
     SAME_SITE_CROSS_ORIGIN_NAVIGATION_NOT_OPT_IN_IN_MAIN_FRAME_NAVIGATION = "SameSiteCrossOriginNavigationNotOptInInMainFrameNavigation"
+    MEMORY_PRESSURE_ON_TRIGGER = "MemoryPressureOnTrigger"
+    MEMORY_PRESSURE_AFTER_TRIGGERED = "MemoryPressureAfterTriggered"
 
     def to_json(self) -> str:
         return self.value

@@ -1,7 +1,9 @@
 # Python CDP
+#### Currently supports CDP [r1134181][2] (Chrome 113).
+
 Python CDP Generator (shortened to PyCDP) is a library that provides
 Python wrappers for the types, commands, and events specified in the [Chrome
-DevTools Protocol][1]. Currently supports CDP [r970581][2] (Chrome 97).
+DevTools Protocol][1].  
 
 The Chrome DevTools Protocol provides for remote control of a web browser by
 sending JSON messages over a WebSocket. That JSON format is described by a
@@ -109,10 +111,16 @@ cdpgen --browser-protocol browser_protocol.json --js-protocol js_protocol.json -
 ```
 You can then include the `/tmp/cdp` package in your project and import it like the builtin CDP types.  
 
-Here you can find script that automatically downloads latest protocol files and generates python types
+Here you can find script that automatically downloads protocol files and generates python types. It has two modes, one for the latest version and one for a specific version.  
+P.S. Don't forget to make it executable by running `chmod +x update-cdp.sh`
+
+**To generate types for the latest version:**
 ```shell
-chmod +x update-cdp.sh
 ./update-cdp.sh
+```
+**To generate types for a specific version, you must provide full commit hash:**
+```shell
+./update-cdp.sh 4dd6c67776f43f75bc9b19f09618c151621c6ed9
 ```
 
 ## Implementation of a CDP client
@@ -142,7 +150,7 @@ PyCDP is licensed under the MIT License.
 <hr>
 
 [1]: https://chromedevtools.github.io/devtools-protocol/
-[2]: https://github.com/ChromeDevTools/devtools-protocol/tree/1b1e643d77dacc9568b5acc1efdeaec19c048a27
+[2]: https://github.com/ChromeDevTools/devtools-protocol/tree/4dd6c67776f43f75bc9b19f09618c151621c6ed9
 [3]: docs/getting_started.rst
 [4]: https://github.com/hyperiongray/trio-chrome-devtools-protocol
 [5]: https://python-poetry.org/docs/
