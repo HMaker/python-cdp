@@ -111,8 +111,8 @@ cdpgen --browser-protocol browser_protocol.json --js-protocol js_protocol.json -
 ```
 You can then include the `/tmp/cdp` package in your project and import it like the builtin CDP types.  
 
-Here you can find script that automatically downloads protocol files and generates python types. It has two modes, one for the latest version and one for a specific version.  
-P.S. Don't forget to make it executable by running `chmod +x update-cdp.sh`
+### Updating built in CDP wrappers
+The `update-cdp.sh` script generates the builtin CDP wrappers, the `pycdp.cdp` package, by automatically fetching CDP protocol specifications from the [ChromeDevTools][8] repostitory.
 
 **To generate types for the latest version:**
 ```shell
@@ -122,6 +122,7 @@ P.S. Don't forget to make it executable by running `chmod +x update-cdp.sh`
 ```shell
 ./update-cdp.sh 4dd6c67776f43f75bc9b19f09618c151621c6ed9
 ```
+P.S. Don't forget to make it executable by running `chmod +x update-cdp.sh`
 
 ## Implementation of a CDP client
 The `pycdp.cdp` package follows same structure of CDP domains, each domain is a Python module and each command a function in that module.
@@ -156,3 +157,4 @@ PyCDP is licensed under the MIT License.
 [5]: https://python-poetry.org/docs/
 [6]: https://pypi.org/project/Twisted/
 [7]: https://pypi.org/project/autobahn/
+[8]: https://github.com/ChromeDevTools
