@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "python-cdp"
-version = "1.3.0"
+version = "1.4.0"
 description = "Python type wrappers for Chrome DevTools Protocol (CDP)"
 packages = [
     {include = "pycdp"}
