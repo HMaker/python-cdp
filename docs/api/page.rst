@@ -368,6 +368,8 @@ to. For more information, see
 
 .. autofunction:: set_lifecycle_events_enabled
 
+.. autofunction:: set_prerendering_allowed
+
 .. autofunction:: set_rph_registration_mode
 
 .. autofunction:: set_spc_transaction_mode

@@ -23,7 +23,7 @@ class ScreenshotParams:
     #: Image compression format (defaults to png).
     format_: typing.Optional[str] = None
 
-    #: Compression quality from range [0..100] (jpeg only).
+    #: Compression quality from range [0..100] (jpeg and webp only).
     quality: typing.Optional[int] = None
 
     #: Optimize image encoding for speed, not for resulting size (defaults to false)

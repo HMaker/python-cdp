@@ -57,12 +57,12 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
-.. autoclass:: PreloadEnabledState
+.. autoclass:: PreloadingStatus
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
 
-.. autoclass:: PreloadingStatus
+.. autoclass:: PrefetchStatus
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json

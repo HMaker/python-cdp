@@ -123,7 +123,7 @@ class AXValueSource:
     #: Whether this source is superseded by a higher priority source.
     superseded: typing.Optional[bool] = None
 
-    #: The native markup source for this value, e.g. a <label> element.
+    #: The native markup source for this value, e.g. a ``<label>`` element.
     native_source: typing.Optional[AXValueNativeSourceType] = None
 
     #: The value, such as a node or node list, of the native source.

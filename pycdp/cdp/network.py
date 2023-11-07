@@ -299,6 +299,9 @@ class ResourceTiming:
     #: Time the server finished pushing request.
     push_end: float
 
+    #: Started receiving response headers.
+    receive_headers_start: float
+
     #: Finished receiving response headers.
     receive_headers_end: float
 
@@ -321,6 +324,7 @@ class ResourceTiming:
         json['sendEnd'] = self.send_end
         json['pushStart'] = self.push_start
         json['pushEnd'] = self.push_end
+        json['receiveHeadersStart'] = self.receive_headers_start
         json['receiveHeadersEnd'] = self.receive_headers_end
         return json
 
@@ -344,6 +348,7 @@ class ResourceTiming:
             send_end=float(json['sendEnd']),
             push_start=float(json['pushStart']),
             push_end=float(json['pushEnd']),
+            receive_headers_start=float(json['receiveHeadersStart']),
             receive_headers_end=float(json['receiveHeadersEnd']),
         )
 
@@ -702,6 +707,10 @@ class CorsError(enum.Enum):
     INVALID_PRIVATE_NETWORK_ACCESS = "InvalidPrivateNetworkAccess"
     UNEXPECTED_PRIVATE_NETWORK_ACCESS = "UnexpectedPrivateNetworkAccess"
     NO_CORS_REDIRECT_MODE_NOT_FOLLOW = "NoCorsRedirectModeNotFollow"
+    PREFLIGHT_MISSING_PRIVATE_NETWORK_ACCESS_ID = "PreflightMissingPrivateNetworkAccessId"
+    PREFLIGHT_MISSING_PRIVATE_NETWORK_ACCESS_NAME = "PreflightMissingPrivateNetworkAccessName"
+    PRIVATE_NETWORK_ACCESS_PERMISSION_UNAVAILABLE = "PrivateNetworkAccessPermissionUnavailable"
+    PRIVATE_NETWORK_ACCESS_PERMISSION_DENIED = "PrivateNetworkAccessPermissionDenied"
 
     def to_json(self) -> str:
         return self.value
@@ -1279,6 +1288,7 @@ class SetCookieBlockedReason(enum.Enum):
     SAME_PARTY_FROM_CROSS_PARTY_CONTEXT = "SamePartyFromCrossPartyContext"
     SAME_PARTY_CONFLICTS_WITH_OTHER_ATTRIBUTES = "SamePartyConflictsWithOtherAttributes"
     NAME_VALUE_PAIR_EXCEEDS_MAX_SIZE = "NameValuePairExceedsMaxSize"
+    DISALLOWED_CHARACTER = "DisallowedCharacter"
 
     def to_json(self) -> str:
         return self.value
@@ -1681,7 +1691,7 @@ class SignedExchangeHeader:
     #: Signed exchange response signature.
     signatures: typing.List[SignedExchangeSignature]
 
-    #: Signed exchange header integrity hash in the form of "sha256-<base64-hash-value>".
+    #: Signed exchange header integrity hash in the form of ``sha256-<base64-hash-value>``.
     header_integrity: str
 
     def to_json(self) -> T_JSON_DICT:
@@ -1800,6 +1810,7 @@ class ContentEncoding(enum.Enum):
     DEFLATE = "deflate"
     GZIP = "gzip"
     BR = "br"
+    ZSTD = "zstd"
 
     def to_json(self) -> str:
         return self.value
@@ -1970,11 +1981,49 @@ class CrossOriginEmbedderPolicyStatus:
         )
 
 
+class ContentSecurityPolicySource(enum.Enum):
+    HTTP = "HTTP"
+    META = "Meta"
+
+    def to_json(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_json(cls, json: str) -> ContentSecurityPolicySource:
+        return cls(json)
+
+
+@dataclass
+class ContentSecurityPolicyStatus:
+    effective_directives: str
+
+    is_enforced: bool
+
+    source: ContentSecurityPolicySource
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['effectiveDirectives'] = self.effective_directives
+        json['isEnforced'] = self.is_enforced
+        json['source'] = self.source.to_json()
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> ContentSecurityPolicyStatus:
+        return cls(
+            effective_directives=str(json['effectiveDirectives']),
+            is_enforced=bool(json['isEnforced']),
+            source=ContentSecurityPolicySource.from_json(json['source']),
+        )
+
+
 @dataclass
 class SecurityIsolationStatus:
     coop: typing.Optional[CrossOriginOpenerPolicyStatus] = None
 
     coep: typing.Optional[CrossOriginEmbedderPolicyStatus] = None
+
+    csp: typing.Optional[typing.List[ContentSecurityPolicyStatus]] = None
 
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
@@ -1982,6 +2031,8 @@ class SecurityIsolationStatus:
             json['coop'] = self.coop.to_json()
         if self.coep is not None:
             json['coep'] = self.coep.to_json()
+        if self.csp is not None:
+            json['csp'] = [i.to_json() for i in self.csp]
         return json
 
     @classmethod
@@ -1989,6 +2040,7 @@ class SecurityIsolationStatus:
         return cls(
             coop=CrossOriginOpenerPolicyStatus.from_json(json['coop']) if json.get('coop', None) is not None else None,
             coep=CrossOriginEmbedderPolicyStatus.from_json(json['coep']) if json.get('coep', None) is not None else None,
+            csp=[ContentSecurityPolicyStatus.from_json(i) for i in json['csp']] if json.get('csp', None) is not None else None,
         )
 
 
@@ -3026,17 +3078,13 @@ class LoadingFinished:
     timestamp: MonotonicTime
     #: Total number of bytes received for this request.
     encoded_data_length: float
-    #: Set when 1) response was blocked by Cross-Origin Read Blocking and also
-    #: 2) this needs to be reported to the DevTools console.
-    should_report_corb_blocking: typing.Optional[bool]
 
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> LoadingFinished:
         return cls(
             request_id=RequestId.from_json(json['requestId']),
             timestamp=MonotonicTime.from_json(json['timestamp']),
-            encoded_data_length=float(json['encodedDataLength']),
-            should_report_corb_blocking=bool(json['shouldReportCorbBlocking']) if json.get('shouldReportCorbBlocking', None) is not None else None
+            encoded_data_length=float(json['encodedDataLength'])
         )
 
 

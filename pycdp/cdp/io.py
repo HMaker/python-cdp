@@ -16,8 +16,8 @@ from . import runtime
 
 class StreamHandle(str):
     '''
-    This is either obtained from another method or specified as ``blob:&lt;uuid&gt;`` where
-    ``&lt;uuid&gt`` is an UUID of a Blob.
+    This is either obtained from another method or specified as ``blob:<uuid>`` where
+    ``<uuid>`` is an UUID of a Blob.
     '''
     def to_json(self) -> str:
         return self

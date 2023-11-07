@@ -42,13 +42,29 @@ class RuleSet:
     loader_id: network.LoaderId
 
     #: Source text of JSON representing the rule set. If it comes from
-    #: <script> tag, it is the textContent of the node. Note that it is
+    #: ``<script>`` tag, it is the textContent of the node. Note that it is
     #: a JSON for valid case.
     #: 
     #: See also:
     #: - https://wicg.github.io/nav-speculation/speculation-rules.html
     #: - https://github.com/WICG/nav-speculation/blob/main/triggers.md
     source_text: str
+
+    #: A speculation rule set is either added through an inline
+    #: ``<script>`` tag or through an external resource via the
+    #: 'Speculation-Rules' HTTP header. For the first case, we include
+    #: the BackendNodeId of the relevant ``<script>`` tag. For the second
+    #: case, we include the external URL where the rule set was loaded
+    #: from, and also RequestId if Network domain is enabled.
+    #: 
+    #: See also:
+    #: - https://wicg.github.io/nav-speculation/speculation-rules.html#speculation-rules-script
+    #: - https://wicg.github.io/nav-speculation/speculation-rules.html#speculation-rules-header
+    backend_node_id: typing.Optional[dom.BackendNodeId] = None
+
+    url: typing.Optional[str] = None
+
+    request_id: typing.Optional[network.RequestId] = None
 
     #: Error information
     #: ``errorMessage`` is null iff ``errorType`` is null.
@@ -62,6 +78,12 @@ class RuleSet:
         json['id'] = self.id_.to_json()
         json['loaderId'] = self.loader_id.to_json()
         json['sourceText'] = self.source_text
+        if self.backend_node_id is not None:
+            json['backendNodeId'] = self.backend_node_id.to_json()
+        if self.url is not None:
+            json['url'] = self.url
+        if self.request_id is not None:
+            json['requestId'] = self.request_id.to_json()
         if self.error_type is not None:
             json['errorType'] = self.error_type.to_json()
         if self.error_message is not None:
@@ -74,6 +96,9 @@ class RuleSet:
             id_=RuleSetId.from_json(json['id']),
             loader_id=network.LoaderId.from_json(json['loaderId']),
             source_text=str(json['sourceText']),
+            backend_node_id=dom.BackendNodeId.from_json(json['backendNodeId']) if json.get('backendNodeId', None) is not None else None,
+            url=str(json['url']) if json.get('url', None) is not None else None,
+            request_id=network.RequestId.from_json(json['requestId']) if json.get('requestId', None) is not None else None,
             error_type=RuleSetErrorType.from_json(json['errorType']) if json.get('errorType', None) is not None else None,
             error_message=str(json['errorMessage']) if json.get('errorMessage', None) is not None else None,
         )
@@ -224,7 +249,6 @@ class PrerenderFinalStatus(enum.Enum):
     AUDIO_OUTPUT_DEVICE_REQUESTED = "AudioOutputDeviceRequested"
     MIXED_CONTENT = "MixedContent"
     TRIGGER_BACKGROUNDED = "TriggerBackgrounded"
-    EMBEDDER_TRIGGERED_AND_CROSS_ORIGIN_REDIRECTED = "EmbedderTriggeredAndCrossOriginRedirected"
     MEMORY_LIMIT_EXCEEDED = "MemoryLimitExceeded"
     FAIL_TO_GET_MEMORY_USAGE = "FailToGetMemoryUsage"
     DATA_SAVER_ENABLED = "DataSaverEnabled"
@@ -256,27 +280,16 @@ class PrerenderFinalStatus(enum.Enum):
     SAME_SITE_CROSS_ORIGIN_NAVIGATION_NOT_OPT_IN_IN_MAIN_FRAME_NAVIGATION = "SameSiteCrossOriginNavigationNotOptInInMainFrameNavigation"
     MEMORY_PRESSURE_ON_TRIGGER = "MemoryPressureOnTrigger"
     MEMORY_PRESSURE_AFTER_TRIGGERED = "MemoryPressureAfterTriggered"
+    PRERENDERING_DISABLED_BY_DEV_TOOLS = "PrerenderingDisabledByDevTools"
+    RESOURCE_LOAD_BLOCKED_BY_CLIENT = "ResourceLoadBlockedByClient"
+    SPECULATION_RULE_REMOVED = "SpeculationRuleRemoved"
+    ACTIVATED_WITH_AUXILIARY_BROWSING_CONTEXTS = "ActivatedWithAuxiliaryBrowsingContexts"
 
     def to_json(self) -> str:
         return self.value
 
     @classmethod
     def from_json(cls, json: str) -> PrerenderFinalStatus:
-        return cls(json)
-
-
-class PreloadEnabledState(enum.Enum):
-    ENABLED = "Enabled"
-    DISABLED_BY_DATA_SAVER = "DisabledByDataSaver"
-    DISABLED_BY_BATTERY_SAVER = "DisabledByBatterySaver"
-    DISABLED_BY_PREFERENCE = "DisabledByPreference"
-    NOT_SUPPORTED = "NotSupported"
-
-    def to_json(self) -> str:
-        return self.value
-
-    @classmethod
-    def from_json(cls, json: str) -> PreloadEnabledState:
         return cls(json)
 
 
@@ -297,6 +310,50 @@ class PreloadingStatus(enum.Enum):
 
     @classmethod
     def from_json(cls, json: str) -> PreloadingStatus:
+        return cls(json)
+
+
+class PrefetchStatus(enum.Enum):
+    '''
+    TODO(https://crbug.com/1384419): revisit the list of PrefetchStatus and
+    filter out the ones that aren't necessary to the developers.
+    '''
+    PREFETCH_ALLOWED = "PrefetchAllowed"
+    PREFETCH_FAILED_INELIGIBLE_REDIRECT = "PrefetchFailedIneligibleRedirect"
+    PREFETCH_FAILED_INVALID_REDIRECT = "PrefetchFailedInvalidRedirect"
+    PREFETCH_FAILED_MIME_NOT_SUPPORTED = "PrefetchFailedMIMENotSupported"
+    PREFETCH_FAILED_NET_ERROR = "PrefetchFailedNetError"
+    PREFETCH_FAILED_NON2_XX = "PrefetchFailedNon2XX"
+    PREFETCH_FAILED_PER_PAGE_LIMIT_EXCEEDED = "PrefetchFailedPerPageLimitExceeded"
+    PREFETCH_EVICTED = "PrefetchEvicted"
+    PREFETCH_HELDBACK = "PrefetchHeldback"
+    PREFETCH_INELIGIBLE_RETRY_AFTER = "PrefetchIneligibleRetryAfter"
+    PREFETCH_IS_PRIVACY_DECOY = "PrefetchIsPrivacyDecoy"
+    PREFETCH_IS_STALE = "PrefetchIsStale"
+    PREFETCH_NOT_ELIGIBLE_BROWSER_CONTEXT_OFF_THE_RECORD = "PrefetchNotEligibleBrowserContextOffTheRecord"
+    PREFETCH_NOT_ELIGIBLE_DATA_SAVER_ENABLED = "PrefetchNotEligibleDataSaverEnabled"
+    PREFETCH_NOT_ELIGIBLE_EXISTING_PROXY = "PrefetchNotEligibleExistingProxy"
+    PREFETCH_NOT_ELIGIBLE_HOST_IS_NON_UNIQUE = "PrefetchNotEligibleHostIsNonUnique"
+    PREFETCH_NOT_ELIGIBLE_NON_DEFAULT_STORAGE_PARTITION = "PrefetchNotEligibleNonDefaultStoragePartition"
+    PREFETCH_NOT_ELIGIBLE_SAME_SITE_CROSS_ORIGIN_PREFETCH_REQUIRED_PROXY = "PrefetchNotEligibleSameSiteCrossOriginPrefetchRequiredProxy"
+    PREFETCH_NOT_ELIGIBLE_SCHEME_IS_NOT_HTTPS = "PrefetchNotEligibleSchemeIsNotHttps"
+    PREFETCH_NOT_ELIGIBLE_USER_HAS_COOKIES = "PrefetchNotEligibleUserHasCookies"
+    PREFETCH_NOT_ELIGIBLE_USER_HAS_SERVICE_WORKER = "PrefetchNotEligibleUserHasServiceWorker"
+    PREFETCH_NOT_ELIGIBLE_BATTERY_SAVER_ENABLED = "PrefetchNotEligibleBatterySaverEnabled"
+    PREFETCH_NOT_ELIGIBLE_PRELOADING_DISABLED = "PrefetchNotEligiblePreloadingDisabled"
+    PREFETCH_NOT_FINISHED_IN_TIME = "PrefetchNotFinishedInTime"
+    PREFETCH_NOT_STARTED = "PrefetchNotStarted"
+    PREFETCH_NOT_USED_COOKIES_CHANGED = "PrefetchNotUsedCookiesChanged"
+    PREFETCH_PROXY_NOT_AVAILABLE = "PrefetchProxyNotAvailable"
+    PREFETCH_RESPONSE_USED = "PrefetchResponseUsed"
+    PREFETCH_SUCCESSFUL_BUT_NOT_USED = "PrefetchSuccessfulButNotUsed"
+    PREFETCH_NOT_USED_PROBE_FAILED = "PrefetchNotUsedProbeFailed"
+
+    def to_json(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_json(cls, json: str) -> PrefetchStatus:
         return cls(json)
 
 
@@ -375,12 +432,20 @@ class PreloadEnabledStateUpdated:
     '''
     Fired when a preload enabled state is updated.
     '''
-    state: PreloadEnabledState
+    disabled_by_preference: bool
+    disabled_by_data_saver: bool
+    disabled_by_battery_saver: bool
+    disabled_by_holdback_prefetch_speculation_rules: bool
+    disabled_by_holdback_prerender_speculation_rules: bool
 
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> PreloadEnabledStateUpdated:
         return cls(
-            state=PreloadEnabledState.from_json(json['state'])
+            disabled_by_preference=bool(json['disabledByPreference']),
+            disabled_by_data_saver=bool(json['disabledByDataSaver']),
+            disabled_by_battery_saver=bool(json['disabledByBatterySaver']),
+            disabled_by_holdback_prefetch_speculation_rules=bool(json['disabledByHoldbackPrefetchSpeculationRules']),
+            disabled_by_holdback_prerender_speculation_rules=bool(json['disabledByHoldbackPrerenderSpeculationRules'])
         )
 
 
@@ -395,6 +460,8 @@ class PrefetchStatusUpdated:
     initiating_frame_id: page.FrameId
     prefetch_url: str
     status: PreloadingStatus
+    prefetch_status: PrefetchStatus
+    request_id: network.RequestId
 
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> PrefetchStatusUpdated:
@@ -402,7 +469,9 @@ class PrefetchStatusUpdated:
             key=PreloadingAttemptKey.from_json(json['key']),
             initiating_frame_id=page.FrameId.from_json(json['initiatingFrameId']),
             prefetch_url=str(json['prefetchUrl']),
-            status=PreloadingStatus.from_json(json['status'])
+            status=PreloadingStatus.from_json(json['status']),
+            prefetch_status=PrefetchStatus.from_json(json['prefetchStatus']),
+            request_id=network.RequestId.from_json(json['requestId'])
         )
 
 
@@ -413,18 +482,19 @@ class PrerenderStatusUpdated:
     Fired when a prerender attempt is updated.
     '''
     key: PreloadingAttemptKey
-    #: The frame id of the frame initiating prerender.
-    initiating_frame_id: page.FrameId
-    prerendering_url: str
     status: PreloadingStatus
+    prerender_status: typing.Optional[PrerenderFinalStatus]
+    #: This is used to give users more information about the name of Mojo interface
+    #: that is incompatible with prerender and has caused the cancellation of the attempt.
+    disallowed_mojo_interface: typing.Optional[str]
 
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> PrerenderStatusUpdated:
         return cls(
             key=PreloadingAttemptKey.from_json(json['key']),
-            initiating_frame_id=page.FrameId.from_json(json['initiatingFrameId']),
-            prerendering_url=str(json['prerenderingUrl']),
-            status=PreloadingStatus.from_json(json['status'])
+            status=PreloadingStatus.from_json(json['status']),
+            prerender_status=PrerenderFinalStatus.from_json(json['prerenderStatus']) if json.get('prerenderStatus', None) is not None else None,
+            disallowed_mojo_interface=str(json['disallowedMojoInterface']) if json.get('disallowedMojoInterface', None) is not None else None
         )
 
 

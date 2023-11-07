@@ -26,7 +26,12 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
-.. autoclass:: WebDriverValue
+.. autoclass:: SerializationOptions
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: DeepSerializedValue
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json

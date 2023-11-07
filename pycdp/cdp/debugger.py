@@ -1232,7 +1232,7 @@ class ScriptFailedToParse:
     execution_context_id: runtime.ExecutionContextId
     #: Content hash of the script, SHA-256.
     hash_: str
-    #: Embedder-specific auxiliary data.
+    #: Embedder-specific auxiliary data likely matching {isDefault: boolean, type: 'default'``'isolated'``'worker', frameId: string}
     execution_context_aux_data: typing.Optional[dict]
     #: URL of source map associated with script (if any).
     source_map_url: typing.Optional[str]
@@ -1297,7 +1297,7 @@ class ScriptParsed:
     execution_context_id: runtime.ExecutionContextId
     #: Content hash of the script, SHA-256.
     hash_: str
-    #: Embedder-specific auxiliary data.
+    #: Embedder-specific auxiliary data likely matching {isDefault: boolean, type: 'default'``'isolated'``'worker', frameId: string}
     execution_context_aux_data: typing.Optional[dict]
     #: True, if this script is generated as a result of the live edit operation.
     is_live_edit: typing.Optional[bool]

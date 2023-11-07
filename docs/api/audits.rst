@@ -119,16 +119,6 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
-.. autoclass:: TwaQualityEnforcementViolationType
-      :members:
-      :undoc-members:
-      :exclude-members: from_json, to_json
-
-.. autoclass:: TrustedWebActivityIssueDetails
-      :members:
-      :undoc-members:
-      :exclude-members: from_json, to_json
-
 .. autoclass:: LowTextContrastIssueDetails
       :members:
       :undoc-members:
@@ -194,7 +184,32 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: FederatedAuthUserInfoRequestIssueDetails
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: FederatedAuthUserInfoRequestIssueReason
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: ClientHintIssueDetails
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: FailedRequestInfo
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: StyleSheetLoadingIssueReason
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: StylesheetLoadingIssueDetails
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
@@ -232,6 +247,8 @@ to. For more information, see
 :ref:`Getting Started: Commands <getting-started-commands>`.
 
 .. autofunction:: check_contrast
+
+.. autofunction:: check_forms_issues
 
 .. autofunction:: disable
 

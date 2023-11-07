@@ -106,7 +106,7 @@
                         },
                         {
                             "name": "nativeSource",
-                            "description": "The native markup source for this value, e.g. a <label> element.",
+                            "description": "The native markup source for this value, e.g. a `<label>` element.",
                             "optional": true,
                             "$ref": "AXValueNativeSourceType"
                         },
@@ -1009,7 +1009,8 @@
                         "WarnSameSiteLaxCrossDowngradeStrict",
                         "WarnSameSiteLaxCrossDowngradeLax",
                         "WarnAttributeValueExceedsMaxSize",
-                        "WarnDomainNonASCII"
+                        "WarnDomainNonASCII",
+                        "WarnThirdPartyPhaseout"
                     ]
                 },
                 {
@@ -1331,47 +1332,6 @@
                     ]
                 },
                 {
-                    "id": "TwaQualityEnforcementViolationType",
-                    "type": "string",
-                    "enum": [
-                        "kHttpError",
-                        "kUnavailableOffline",
-                        "kDigitalAssetLinks"
-                    ]
-                },
-                {
-                    "id": "TrustedWebActivityIssueDetails",
-                    "type": "object",
-                    "properties": [
-                        {
-                            "name": "url",
-                            "description": "The url that triggers the violation.",
-                            "type": "string"
-                        },
-                        {
-                            "name": "violationType",
-                            "$ref": "TwaQualityEnforcementViolationType"
-                        },
-                        {
-                            "name": "httpStatusCode",
-                            "optional": true,
-                            "type": "integer"
-                        },
-                        {
-                            "name": "packageName",
-                            "description": "The package name of the Trusted Web Activity client app. This field is\nonly used when violation type is kDigitalAssetLinks.",
-                            "optional": true,
-                            "type": "string"
-                        },
-                        {
-                            "name": "signature",
-                            "description": "The signature of the Trusted Web Activity client app. This field is only\nused when violation type is kDigitalAssetLinks.",
-                            "optional": true,
-                            "type": "string"
-                        }
-                    ]
-                },
-                {
                     "id": "LowTextContrastIssueDetails",
                     "type": "object",
                     "properties": [
@@ -1453,7 +1413,6 @@
                         "InsecureContext",
                         "InvalidHeader",
                         "InvalidRegisterTriggerHeader",
-                        "InvalidEligibleHeader",
                         "SourceAndTriggerHeaders",
                         "SourceIgnored",
                         "TriggerIgnored",
@@ -1461,7 +1420,9 @@
                         "OsTriggerIgnored",
                         "InvalidRegisterOsSourceHeader",
                         "InvalidRegisterOsTriggerHeader",
-                        "WebAndOsHeaders"
+                        "WebAndOsHeaders",
+                        "NoWebOrOsSupport",
+                        "NavigationRegistrationWithoutTransientUserActivation"
                     ]
                 },
                 {
@@ -1520,6 +1481,7 @@
                 },
                 {
                     "id": "NavigatorUserAgentIssueDetails",
+                    "deprecated": true,
                     "type": "object",
                     "properties": [
                         {
@@ -1547,7 +1509,8 @@
                         "FormInputAssignedAutocompleteValueToIdOrNameAttributeError",
                         "FormLabelHasNeitherForNorNestedInput",
                         "FormLabelForMatchesNonExistingIdError",
-                        "FormInputHasWrongButWellIntendedAutocompleteValueError"
+                        "FormInputHasWrongButWellIntendedAutocompleteValueError",
+                        "ResponseWasBlockedByORB"
                     ]
                 },
                 {
@@ -1574,6 +1537,11 @@
                             "name": "violatingNodeAttribute",
                             "optional": true,
                             "type": "string"
+                        },
+                        {
+                            "name": "request",
+                            "optional": true,
+                            "$ref": "AffectedRequest"
                         }
                     ]
                 },
@@ -1667,7 +1635,35 @@
                         "IdTokenInvalidContentType",
                         "ErrorIdToken",
                         "Canceled",
-                        "RpPageNotVisible"
+                        "RpPageNotVisible",
+                        "SilentMediationFailure",
+                        "ThirdPartyCookiesBlocked"
+                    ]
+                },
+                {
+                    "id": "FederatedAuthUserInfoRequestIssueDetails",
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "federatedAuthUserInfoRequestIssueReason",
+                            "$ref": "FederatedAuthUserInfoRequestIssueReason"
+                        }
+                    ]
+                },
+                {
+                    "id": "FederatedAuthUserInfoRequestIssueReason",
+                    "description": "Represents the failure reason when a getUserInfo() call fails.\nShould be updated alongside FederatedAuthUserInfoRequestResult in\nthird_party/blink/public/mojom/devtools/inspector_issue.mojom.",
+                    "type": "string",
+                    "enum": [
+                        "NotSameOrigin",
+                        "NotIframe",
+                        "NotPotentiallyTrustworthy",
+                        "NoApiPermission",
+                        "NotSignedInWithIdp",
+                        "NoAccountSharingPermission",
+                        "InvalidConfigOrWellKnown",
+                        "InvalidAccountsResponse",
+                        "NoReturningUserFromFetchedAccounts"
                     ]
                 },
                 {
@@ -1686,6 +1682,58 @@
                     ]
                 },
                 {
+                    "id": "FailedRequestInfo",
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "url",
+                            "description": "The URL that failed to load.",
+                            "type": "string"
+                        },
+                        {
+                            "name": "failureMessage",
+                            "description": "The failure message for the failed request.",
+                            "type": "string"
+                        },
+                        {
+                            "name": "requestId",
+                            "optional": true,
+                            "$ref": "Network.RequestId"
+                        }
+                    ]
+                },
+                {
+                    "id": "StyleSheetLoadingIssueReason",
+                    "type": "string",
+                    "enum": [
+                        "LateImportRule",
+                        "RequestFailed"
+                    ]
+                },
+                {
+                    "id": "StylesheetLoadingIssueDetails",
+                    "description": "This issue warns when a referenced stylesheet couldn't be loaded.",
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "sourceCodeLocation",
+                            "description": "Source code position that referenced the failing stylesheet.",
+                            "$ref": "SourceCodeLocation"
+                        },
+                        {
+                            "name": "styleSheetLoadingIssueReason",
+                            "description": "Reason why the stylesheet couldn't be loaded.",
+                            "$ref": "StyleSheetLoadingIssueReason"
+                        },
+                        {
+                            "name": "failedRequestInfo",
+                            "description": "Contains additional info when the failure was due to a request.",
+                            "optional": true,
+                            "$ref": "FailedRequestInfo"
+                        }
+                    ]
+                },
+                {
                     "id": "InspectorIssueCode",
                     "description": "A unique identifier for the type of issue. Each type may use one of the\noptional fields in InspectorIssueDetails to convey more specific\ninformation about the kind of issue.",
                     "type": "string",
@@ -1696,7 +1744,6 @@
                         "HeavyAdIssue",
                         "ContentSecurityPolicyIssue",
                         "SharedArrayBufferIssue",
-                        "TrustedWebActivityIssue",
                         "LowTextContrastIssue",
                         "CorsIssue",
                         "AttributionReportingIssue",
@@ -1706,7 +1753,9 @@
                         "DeprecationIssue",
                         "ClientHintIssue",
                         "FederatedAuthRequestIssue",
-                        "BounceTrackingIssue"
+                        "BounceTrackingIssue",
+                        "StylesheetLoadingIssue",
+                        "FederatedAuthUserInfoRequestIssue"
                     ]
                 },
                 {
@@ -1745,11 +1794,6 @@
                             "$ref": "SharedArrayBufferIssueDetails"
                         },
                         {
-                            "name": "twaQualityEnforcementDetails",
-                            "optional": true,
-                            "$ref": "TrustedWebActivityIssueDetails"
-                        },
-                        {
                             "name": "lowTextContrastIssueDetails",
                             "optional": true,
                             "$ref": "LowTextContrastIssueDetails"
@@ -1771,6 +1815,7 @@
                         },
                         {
                             "name": "navigatorUserAgentIssueDetails",
+                            "deprecated": true,
                             "optional": true,
                             "$ref": "NavigatorUserAgentIssueDetails"
                         },
@@ -1798,6 +1843,16 @@
                             "name": "bounceTrackingIssueDetails",
                             "optional": true,
                             "$ref": "BounceTrackingIssueDetails"
+                        },
+                        {
+                            "name": "stylesheetLoadingIssueDetails",
+                            "optional": true,
+                            "$ref": "StylesheetLoadingIssueDetails"
+                        },
+                        {
+                            "name": "federatedAuthUserInfoRequestIssueDetails",
+                            "optional": true,
+                            "$ref": "FederatedAuthUserInfoRequestIssueDetails"
                         }
                     ]
                 },
@@ -1899,6 +1954,19 @@
                             "type": "boolean"
                         }
                     ]
+                },
+                {
+                    "name": "checkFormsIssues",
+                    "description": "Runs the form issues check for the target page. Found issues are reported\nusing Audits.issueAdded event.",
+                    "returns": [
+                        {
+                            "name": "formIssues",
+                            "type": "array",
+                            "items": {
+                                "$ref": "GenericIssueDetails"
+                            }
+                        }
+                    ]
                 }
             ],
             "events": [
@@ -1908,6 +1976,111 @@
                         {
                             "name": "issue",
                             "$ref": "InspectorIssue"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "domain": "Autofill",
+            "description": "Defines commands and events for Autofill.",
+            "experimental": true,
+            "types": [
+                {
+                    "id": "CreditCard",
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "number",
+                            "description": "16-digit credit card number.",
+                            "type": "string"
+                        },
+                        {
+                            "name": "name",
+                            "description": "Name of the credit card owner.",
+                            "type": "string"
+                        },
+                        {
+                            "name": "expiryMonth",
+                            "description": "2-digit expiry month.",
+                            "type": "string"
+                        },
+                        {
+                            "name": "expiryYear",
+                            "description": "4-digit expiry year.",
+                            "type": "string"
+                        },
+                        {
+                            "name": "cvc",
+                            "description": "3-digit card verification code.",
+                            "type": "string"
+                        }
+                    ]
+                },
+                {
+                    "id": "AddressField",
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "name",
+                            "description": "address field name, for example GIVEN_NAME.",
+                            "type": "string"
+                        },
+                        {
+                            "name": "value",
+                            "description": "address field name, for example Jon Doe.",
+                            "type": "string"
+                        }
+                    ]
+                },
+                {
+                    "id": "Address",
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "fields",
+                            "description": "fields and values defining a test address.",
+                            "type": "array",
+                            "items": {
+                                "$ref": "AddressField"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "commands": [
+                {
+                    "name": "trigger",
+                    "description": "Trigger autofill on a form identified by the fieldId.\nIf the field and related form cannot be autofilled, returns an error.",
+                    "parameters": [
+                        {
+                            "name": "fieldId",
+                            "description": "Identifies a field that serves as an anchor for autofill.",
+                            "$ref": "DOM.BackendNodeId"
+                        },
+                        {
+                            "name": "frameId",
+                            "description": "Identifies the frame that field belongs to.",
+                            "optional": true,
+                            "$ref": "Page.FrameId"
+                        },
+                        {
+                            "name": "card",
+                            "description": "Credit card information to fill out the form. Credit card data is not saved.",
+                            "$ref": "CreditCard"
+                        }
+                    ]
+                },
+                {
+                    "name": "setAddresses",
+                    "description": "Set addresses so that developers can verify their forms implementation.",
+                    "parameters": [
+                        {
+                            "name": "addresses",
+                            "type": "array",
+                            "items": {
+                                "$ref": "Address"
+                            }
                         }
                     ]
                 }
@@ -2605,6 +2778,16 @@
                             "$ref": "BrowserCommandId"
                         }
                     ]
+                },
+                {
+                    "name": "addPrivacySandboxEnrollmentOverride",
+                    "description": "Allows a site to use privacy sandbox features that require enrollment\nwithout the site actually being enrolled. Only supported on page targets.",
+                    "parameters": [
+                        {
+                            "name": "url",
+                            "type": "string"
+                        }
+                    ]
                 }
             ],
             "events": [
@@ -2790,6 +2973,36 @@
                             "description": "Value range in the underlying resource (if available).",
                             "optional": true,
                             "$ref": "SourceRange"
+                        },
+                        {
+                            "name": "specificity",
+                            "description": "Specificity of the selector.",
+                            "experimental": true,
+                            "optional": true,
+                            "$ref": "Specificity"
+                        }
+                    ]
+                },
+                {
+                    "id": "Specificity",
+                    "description": "Specificity:\nhttps://drafts.csswg.org/selectors/#specificity-rules",
+                    "experimental": true,
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "a",
+                            "description": "The a component, which represents the number of ID selectors.",
+                            "type": "integer"
+                        },
+                        {
+                            "name": "b",
+                            "description": "The b component, which represents the number of class selectors, attributes selectors, and\npseudo-classes.",
+                            "type": "integer"
+                        },
+                        {
+                            "name": "c",
+                            "description": "The c component, which represents the number of type selectors and pseudo-elements.",
+                            "type": "integer"
                         }
                     ]
                 },
@@ -2873,7 +3086,7 @@
                         },
                         {
                             "name": "isMutable",
-                            "description": "Whether this stylesheet is mutable. Inline stylesheets become mutable\nafter they have been modified via CSSOM API.\n<link> element's stylesheets become mutable only if DevTools modifies them.\nConstructed stylesheets (new CSSStyleSheet()) are mutable immediately after creation.",
+                            "description": "Whether this stylesheet is mutable. Inline stylesheets become mutable\nafter they have been modified via CSSOM API.\n`<link>` element's stylesheets become mutable only if DevTools modifies them.\nConstructed stylesheets (new CSSStyleSheet()) are mutable immediately after creation.",
                             "type": "boolean"
                         },
                         {
@@ -2999,7 +3212,31 @@
                             "items": {
                                 "$ref": "CSSScope"
                             }
+                        },
+                        {
+                            "name": "ruleTypes",
+                            "description": "The array keeps the types of ancestor CSSRules from the innermost going outwards.",
+                            "experimental": true,
+                            "optional": true,
+                            "type": "array",
+                            "items": {
+                                "$ref": "CSSRuleType"
+                            }
                         }
+                    ]
+                },
+                {
+                    "id": "CSSRuleType",
+                    "description": "Enum indicating the type of a CSS rule, used to represent the order of a style rule's ancestors.\nThis list only contains rule types that are collected during the ancestor rule collection.",
+                    "experimental": true,
+                    "type": "string",
+                    "enum": [
+                        "MediaRule",
+                        "SupportsRule",
+                        "ContainerRule",
+                        "LayerRule",
+                        "ScopeRule",
+                        "StyleRule"
                     ]
                 },
                 {
@@ -4351,6 +4588,9 @@
         {
             "domain": "CacheStorage",
             "experimental": true,
+            "dependencies": [
+                "Storage"
+            ],
             "types": [
                 {
                     "id": "CacheId",
@@ -4444,6 +4684,12 @@
                             "type": "string"
                         },
                         {
+                            "name": "storageBucket",
+                            "description": "Storage bucket of the cache.",
+                            "optional": true,
+                            "$ref": "Storage.StorageBucket"
+                        },
+                        {
                             "name": "cacheName",
                             "description": "The name of the cache.",
                             "type": "string"
@@ -4511,7 +4757,7 @@
                     "parameters": [
                         {
                             "name": "securityOrigin",
-                            "description": "At least and at most one of securityOrigin, storageKey must be specified.\nSecurity origin.",
+                            "description": "At least and at most one of securityOrigin, storageKey, storageBucket must be specified.\nSecurity origin.",
                             "optional": true,
                             "type": "string"
                         },
@@ -4520,6 +4766,12 @@
                             "description": "Storage key.",
                             "optional": true,
                             "type": "string"
+                        },
+                        {
+                            "name": "storageBucket",
+                            "description": "Storage bucket. If not specified, it uses the default bucket.",
+                            "optional": true,
+                            "$ref": "Storage.StorageBucket"
                         }
                     ],
                     "returns": [
@@ -4721,7 +4973,7 @@
         },
         {
             "domain": "DOM",
-            "description": "This domain exposes DOM read/write operations. Each DOM Node is represented with its mirror object\nthat has an `id`. This `id` can be used to get additional information on the Node, resolve it into\nthe JavaScript object wrapper, etc. It is important that client receives DOM events only for the\nnodes that are known to the client. Backend keeps track of the nodes that were sent to the client\nand never sends the same node twice. It is client's responsibility to collect information about\nthe nodes that were sent to the client.<p>Note that `iframe` owner elements will return\ncorresponding document elements as their child nodes.</p>",
+            "description": "This domain exposes DOM read/write operations. Each DOM Node is represented with its mirror object\nthat has an `id`. This `id` can be used to get additional information on the Node, resolve it into\nthe JavaScript object wrapper, etc. It is important that client receives DOM events only for the\nnodes that are known to the client. Backend keeps track of the nodes that were sent to the client\nand never sends the same node twice. It is client's responsibility to collect information about\nthe nodes that were sent to the client. Note that `iframe` owner elements will return\ncorresponding document elements as their child nodes.",
             "dependencies": [
                 "Runtime"
             ],
@@ -8653,7 +8905,7 @@
                         },
                         {
                             "name": "quality",
-                            "description": "Compression quality from range [0..100] (jpeg only).",
+                            "description": "Compression quality from range [0..100] (jpeg and webp only).",
                             "optional": true,
                             "type": "integer"
                         },
@@ -8728,7 +8980,7 @@
             "types": [
                 {
                     "id": "StreamHandle",
-                    "description": "This is either obtained from another method or specified as `blob:&lt;uuid&gt;` where\n`&lt;uuid&gt` is an UUID of a Blob.",
+                    "description": "This is either obtained from another method or specified as `blob:<uuid>` where\n`<uuid>` is an UUID of a Blob.",
                     "type": "string"
                 }
             ],
@@ -8809,7 +9061,8 @@
             "domain": "IndexedDB",
             "experimental": true,
             "dependencies": [
-                "Runtime"
+                "Runtime",
+                "Storage"
             ],
             "types": [
                 {
@@ -9030,7 +9283,7 @@
                     "parameters": [
                         {
                             "name": "securityOrigin",
-                            "description": "At least and at most one of securityOrigin, storageKey must be specified.\nSecurity origin.",
+                            "description": "At least and at most one of securityOrigin, storageKey, or storageBucket must be specified.\nSecurity origin.",
                             "optional": true,
                             "type": "string"
                         },
@@ -9039,6 +9292,12 @@
                             "description": "Storage key.",
                             "optional": true,
                             "type": "string"
+                        },
+                        {
+                            "name": "storageBucket",
+                            "description": "Storage bucket. If not specified, it uses the default bucket.",
+                            "optional": true,
+                            "$ref": "Storage.StorageBucket"
                         },
                         {
                             "name": "databaseName",
@@ -9058,7 +9317,7 @@
                     "parameters": [
                         {
                             "name": "securityOrigin",
-                            "description": "At least and at most one of securityOrigin, storageKey must be specified.\nSecurity origin.",
+                            "description": "At least and at most one of securityOrigin, storageKey, or storageBucket must be specified.\nSecurity origin.",
                             "optional": true,
                             "type": "string"
                         },
@@ -9067,6 +9326,12 @@
                             "description": "Storage key.",
                             "optional": true,
                             "type": "string"
+                        },
+                        {
+                            "name": "storageBucket",
+                            "description": "Storage bucket. If not specified, it uses the default bucket.",
+                            "optional": true,
+                            "$ref": "Storage.StorageBucket"
                         },
                         {
                             "name": "databaseName",
@@ -9081,7 +9346,7 @@
                     "parameters": [
                         {
                             "name": "securityOrigin",
-                            "description": "At least and at most one of securityOrigin, storageKey must be specified.\nSecurity origin.",
+                            "description": "At least and at most one of securityOrigin, storageKey, or storageBucket must be specified.\nSecurity origin.",
                             "optional": true,
                             "type": "string"
                         },
@@ -9090,6 +9355,12 @@
                             "description": "Storage key.",
                             "optional": true,
                             "type": "string"
+                        },
+                        {
+                            "name": "storageBucket",
+                            "description": "Storage bucket. If not specified, it uses the default bucket.",
+                            "optional": true,
+                            "$ref": "Storage.StorageBucket"
                         },
                         {
                             "name": "databaseName",
@@ -9120,7 +9391,7 @@
                     "parameters": [
                         {
                             "name": "securityOrigin",
-                            "description": "At least and at most one of securityOrigin, storageKey must be specified.\nSecurity origin.",
+                            "description": "At least and at most one of securityOrigin, storageKey, or storageBucket must be specified.\nSecurity origin.",
                             "optional": true,
                             "type": "string"
                         },
@@ -9129,6 +9400,12 @@
                             "description": "Storage key.",
                             "optional": true,
                             "type": "string"
+                        },
+                        {
+                            "name": "storageBucket",
+                            "description": "Storage bucket. If not specified, it uses the default bucket.",
+                            "optional": true,
+                            "$ref": "Storage.StorageBucket"
                         },
                         {
                             "name": "databaseName",
@@ -9184,7 +9461,7 @@
                     "parameters": [
                         {
                             "name": "securityOrigin",
-                            "description": "At least and at most one of securityOrigin, storageKey must be specified.\nSecurity origin.",
+                            "description": "At least and at most one of securityOrigin, storageKey, or storageBucket must be specified.\nSecurity origin.",
                             "optional": true,
                             "type": "string"
                         },
@@ -9193,6 +9470,12 @@
                             "description": "Storage key.",
                             "optional": true,
                             "type": "string"
+                        },
+                        {
+                            "name": "storageBucket",
+                            "description": "Storage bucket. If not specified, it uses the default bucket.",
+                            "optional": true,
+                            "$ref": "Storage.StorageBucket"
                         },
                         {
                             "name": "databaseName",
@@ -9224,7 +9507,7 @@
                     "parameters": [
                         {
                             "name": "securityOrigin",
-                            "description": "At least and at most one of securityOrigin, storageKey must be specified.\nSecurity origin.",
+                            "description": "At least and at most one of securityOrigin, storageKey, or storageBucket must be specified.\nSecurity origin.",
                             "optional": true,
                             "type": "string"
                         },
@@ -9233,6 +9516,12 @@
                             "description": "Storage key.",
                             "optional": true,
                             "type": "string"
+                        },
+                        {
+                            "name": "storageBucket",
+                            "description": "Storage bucket. If not specified, it uses the default bucket.",
+                            "optional": true,
+                            "$ref": "Storage.StorageBucket"
                         },
                         {
                             "name": "databaseName",
@@ -9254,7 +9543,7 @@
                     "parameters": [
                         {
                             "name": "securityOrigin",
-                            "description": "At least and at most one of securityOrigin, storageKey must be specified.\nSecurity origin.",
+                            "description": "At least and at most one of securityOrigin, storageKey, or storageBucket must be specified.\nSecurity origin.",
                             "optional": true,
                             "type": "string"
                         },
@@ -9263,6 +9552,12 @@
                             "description": "Storage key.",
                             "optional": true,
                             "type": "string"
+                        },
+                        {
+                            "name": "storageBucket",
+                            "description": "Storage bucket. If not specified, it uses the default bucket.",
+                            "optional": true,
+                            "$ref": "Storage.StorageBucket"
                         }
                     ],
                     "returns": [
@@ -9782,6 +10077,10 @@
                     ]
                 },
                 {
+                    "name": "cancelDragging",
+                    "description": "Cancels any active dragging in the page."
+                },
+                {
                     "name": "emulateTouchFromMouseEvent",
                     "description": "Emulates touch event from the mouse event parameters.",
                     "experimental": true,
@@ -10278,7 +10577,6 @@
                         {
                             "name": "compositingReasons",
                             "description": "A list of strings specifying reasons for the given layer to become composited.",
-                            "deprecated": true,
                             "type": "array",
                             "items": {
                                 "type": "string"
@@ -11074,6 +11372,12 @@
                             "type": "number"
                         },
                         {
+                            "name": "receiveHeadersStart",
+                            "description": "Started receiving response headers.",
+                            "experimental": true,
+                            "type": "number"
+                        },
+                        {
                             "name": "receiveHeadersEnd",
                             "description": "Finished receiving response headers.",
                             "type": "number"
@@ -11401,7 +11705,11 @@
                         "InsecurePrivateNetwork",
                         "InvalidPrivateNetworkAccess",
                         "UnexpectedPrivateNetworkAccess",
-                        "NoCorsRedirectModeNotFollow"
+                        "NoCorsRedirectModeNotFollow",
+                        "PreflightMissingPrivateNetworkAccessId",
+                        "PreflightMissingPrivateNetworkAccessName",
+                        "PrivateNetworkAccessPermissionUnavailable",
+                        "PrivateNetworkAccessPermissionDenied"
                     ]
                 },
                 {
@@ -11902,7 +12210,8 @@
                         "SchemefulSameSiteUnspecifiedTreatedAsLax",
                         "SamePartyFromCrossPartyContext",
                         "SamePartyConflictsWithOtherAttributes",
-                        "NameValuePairExceedsMaxSize"
+                        "NameValuePairExceedsMaxSize",
+                        "DisallowedCharacter"
                     ]
                 },
                 {
@@ -12259,7 +12568,7 @@
                         },
                         {
                             "name": "headerIntegrity",
-                            "description": "Signed exchange header integrity hash in the form of \"sha256-<base64-hash-value>\".",
+                            "description": "Signed exchange header integrity hash in the form of `sha256-<base64-hash-value>`.",
                             "type": "string"
                         }
                     ]
@@ -12345,7 +12654,8 @@
                     "enum": [
                         "deflate",
                         "gzip",
-                        "br"
+                        "br",
+                        "zstd"
                     ]
                 },
                 {
@@ -12476,6 +12786,34 @@
                     ]
                 },
                 {
+                    "id": "ContentSecurityPolicySource",
+                    "experimental": true,
+                    "type": "string",
+                    "enum": [
+                        "HTTP",
+                        "Meta"
+                    ]
+                },
+                {
+                    "id": "ContentSecurityPolicyStatus",
+                    "experimental": true,
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "effectiveDirectives",
+                            "type": "string"
+                        },
+                        {
+                            "name": "isEnforced",
+                            "type": "boolean"
+                        },
+                        {
+                            "name": "source",
+                            "$ref": "ContentSecurityPolicySource"
+                        }
+                    ]
+                },
+                {
                     "id": "SecurityIsolationStatus",
                     "experimental": true,
                     "type": "object",
@@ -12489,6 +12827,14 @@
                             "name": "coep",
                             "optional": true,
                             "$ref": "CrossOriginEmbedderPolicyStatus"
+                        },
+                        {
+                            "name": "csp",
+                            "optional": true,
+                            "type": "array",
+                            "items": {
+                                "$ref": "ContentSecurityPolicyStatus"
+                            }
                         }
                     ]
                 },
@@ -13441,12 +13787,6 @@
                             "name": "encodedDataLength",
                             "description": "Total number of bytes received for this request.",
                             "type": "number"
-                        },
-                        {
-                            "name": "shouldReportCorbBlocking",
-                            "description": "Set when 1) response was blocked by Cross-Origin Read Blocking and also\n2) this needs to be reported to the DevTools console.",
-                            "optional": true,
-                            "type": "boolean"
                         }
                     ]
                 },
@@ -14003,6 +14343,7 @@
                             "enum": [
                                 "Ok",
                                 "InvalidArgument",
+                                "MissingIssuerKeys",
                                 "FailedPrecondition",
                                 "ResourceExhausted",
                                 "AlreadyExists",
@@ -15403,11 +15744,10 @@
                         "ch-ua-platform",
                         "ch-ua-model",
                         "ch-ua-mobile",
-                        "ch-ua-full",
+                        "ch-ua-form-factor",
                         "ch-ua-full-version",
                         "ch-ua-full-version-list",
                         "ch-ua-platform-version",
-                        "ch-ua-reduced",
                         "ch-ua-wow64",
                         "ch-viewport-height",
                         "ch-viewport-width",
@@ -15442,6 +15782,8 @@
                         "payment",
                         "picture-in-picture",
                         "private-aggregation",
+                        "private-state-token-issuance",
+                        "private-state-token-redemption",
                         "publickey-credentials-get",
                         "run-ad-auction",
                         "screen-wake-lock",
@@ -15452,7 +15794,6 @@
                         "smart-card",
                         "storage-access",
                         "sync-xhr",
-                        "trust-token-redemption",
                         "unload",
                         "usb",
                         "vertical-scroll",
@@ -16341,6 +16682,9 @@
                         "ActivationNavigationsDisallowedForBug1234857",
                         "ErrorDocument",
                         "FencedFramesEmbedder",
+                        "CookieDisabled",
+                        "HTTPAuthRequired",
+                        "CookieFlushed",
                         "WebSocket",
                         "WebTransport",
                         "WebRTC",
@@ -16352,14 +16696,12 @@
                         "DocumentLoaded",
                         "DedicatedWorkerOrWorklet",
                         "OutstandingNetworkRequestOthers",
-                        "OutstandingIndexedDBTransaction",
                         "RequestedMIDIPermission",
                         "RequestedAudioCapturePermission",
                         "RequestedVideoCapturePermission",
                         "RequestedBackForwardCacheBlockedSensors",
                         "RequestedBackgroundWorkPermission",
                         "BroadcastChannel",
-                        "IndexedDBConnection",
                         "WebXR",
                         "SharedWorker",
                         "WebLocks",
@@ -16386,7 +16728,10 @@
                         "KeepaliveRequest",
                         "IndexedDBEvent",
                         "Dummy",
-                        "AuthorizationHeader",
+                        "JsNetworkRequestReceivedCacheControlNoStoreResource",
+                        "WebRTCSticky",
+                        "WebTransportSticky",
+                        "WebSocketSticky",
                         "ContentSecurityHandler",
                         "ContentWebAuthenticationAPI",
                         "ContentFileChooser",
@@ -16515,6 +16860,13 @@
                         {
                             "name": "includeCommandLineAPI",
                             "description": "Specifies whether command line API should be available to the script, defaults\nto false.",
+                            "experimental": true,
+                            "optional": true,
+                            "type": "boolean"
+                        },
+                        {
+                            "name": "runImmediately",
+                            "description": "If true, runs the script immediately on existing execution contexts or worlds.\nDefault: false.",
                             "experimental": true,
                             "optional": true,
                             "type": "boolean"
@@ -17094,6 +17446,13 @@
                                 "ReturnAsBase64",
                                 "ReturnAsStream"
                             ]
+                        },
+                        {
+                            "name": "generateTaggedPDF",
+                            "description": "Whether or not to generate tagged (accessible) PDF. Defaults to embedder choice.",
+                            "experimental": true,
+                            "optional": true,
+                            "type": "boolean"
                         }
                     ],
                     "returns": [
@@ -17673,6 +18032,17 @@
                             "type": "boolean"
                         }
                     ]
+                },
+                {
+                    "name": "setPrerenderingAllowed",
+                    "description": "Enable/disable prerendering manually.\n\nThis command is a short-term solution for https://crbug.com/1440085.\nSee https://docs.google.com/document/d/12HVmFxYj5Jc-eJr5OmWsa2bqTJsbgGLKI6ZIyx0_wpA\nfor more details.\n\nTODO(https://crbug.com/1440085): Remove this once Puppeteer supports tab targets.",
+                    "experimental": true,
+                    "parameters": [
+                        {
+                            "name": "isAllowed",
+                            "type": "boolean"
+                        }
+                    ]
                 }
             ],
             "events": [
@@ -17706,7 +18076,7 @@
                         },
                         {
                             "name": "backendNodeId",
-                            "description": "Input node id. Only present for file choosers opened via an <input type=\"file\"> element.",
+                            "description": "Input node id. Only present for file choosers opened via an `<input type=\"file\">` element.",
                             "experimental": true,
                             "optional": true,
                             "$ref": "DOM.BackendNodeId"
@@ -19460,7 +19830,7 @@
                     ]
                 },
                 {
-                    "id": "StorageBucketInfo",
+                    "id": "StorageBucket",
                     "type": "object",
                     "properties": [
                         {
@@ -19468,16 +19838,24 @@
                             "$ref": "SerializedStorageKey"
                         },
                         {
+                            "name": "name",
+                            "description": "If not specified, it is the default bucket of the storageKey.",
+                            "optional": true,
+                            "type": "string"
+                        }
+                    ]
+                },
+                {
+                    "id": "StorageBucketInfo",
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "bucket",
+                            "$ref": "StorageBucket"
+                        },
+                        {
                             "name": "id",
                             "type": "string"
-                        },
-                        {
-                            "name": "name",
-                            "type": "string"
-                        },
-                        {
-                            "name": "isDefault",
-                            "type": "boolean"
                         },
                         {
                             "name": "expiration",
@@ -19496,6 +19874,157 @@
                             "name": "durability",
                             "$ref": "StorageBucketsDurability"
                         }
+                    ]
+                },
+                {
+                    "id": "AttributionReportingSourceType",
+                    "experimental": true,
+                    "type": "string",
+                    "enum": [
+                        "navigation",
+                        "event"
+                    ]
+                },
+                {
+                    "id": "UnsignedInt64AsBase10",
+                    "experimental": true,
+                    "type": "string"
+                },
+                {
+                    "id": "UnsignedInt128AsBase16",
+                    "experimental": true,
+                    "type": "string"
+                },
+                {
+                    "id": "SignedInt64AsBase10",
+                    "experimental": true,
+                    "type": "string"
+                },
+                {
+                    "id": "AttributionReportingFilterDataEntry",
+                    "experimental": true,
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "key",
+                            "type": "string"
+                        },
+                        {
+                            "name": "values",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "AttributionReportingAggregationKeysEntry",
+                    "experimental": true,
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "key",
+                            "type": "string"
+                        },
+                        {
+                            "name": "value",
+                            "$ref": "UnsignedInt128AsBase16"
+                        }
+                    ]
+                },
+                {
+                    "id": "AttributionReportingSourceRegistration",
+                    "experimental": true,
+                    "type": "object",
+                    "properties": [
+                        {
+                            "name": "time",
+                            "$ref": "Network.TimeSinceEpoch"
+                        },
+                        {
+                            "name": "expiry",
+                            "description": "duration in seconds",
+                            "optional": true,
+                            "type": "integer"
+                        },
+                        {
+                            "name": "eventReportWindow",
+                            "description": "duration in seconds",
+                            "optional": true,
+                            "type": "integer"
+                        },
+                        {
+                            "name": "aggregatableReportWindow",
+                            "description": "duration in seconds",
+                            "optional": true,
+                            "type": "integer"
+                        },
+                        {
+                            "name": "type",
+                            "$ref": "AttributionReportingSourceType"
+                        },
+                        {
+                            "name": "sourceOrigin",
+                            "type": "string"
+                        },
+                        {
+                            "name": "reportingOrigin",
+                            "type": "string"
+                        },
+                        {
+                            "name": "destinationSites",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        {
+                            "name": "eventId",
+                            "$ref": "UnsignedInt64AsBase10"
+                        },
+                        {
+                            "name": "priority",
+                            "$ref": "SignedInt64AsBase10"
+                        },
+                        {
+                            "name": "filterData",
+                            "type": "array",
+                            "items": {
+                                "$ref": "AttributionReportingFilterDataEntry"
+                            }
+                        },
+                        {
+                            "name": "aggregationKeys",
+                            "type": "array",
+                            "items": {
+                                "$ref": "AttributionReportingAggregationKeysEntry"
+                            }
+                        },
+                        {
+                            "name": "debugKey",
+                            "optional": true,
+                            "$ref": "UnsignedInt64AsBase10"
+                        }
+                    ]
+                },
+                {
+                    "id": "AttributionReportingSourceRegistrationResult",
+                    "experimental": true,
+                    "type": "string",
+                    "enum": [
+                        "success",
+                        "internalError",
+                        "insufficientSourceCapacity",
+                        "insufficientUniqueDestinationCapacity",
+                        "excessiveReportingOrigins",
+                        "prohibitedByBrowserPolicy",
+                        "successNoised",
+                        "destinationReportingLimitReached",
+                        "destinationGlobalLimitReached",
+                        "destinationBothLimitsReached",
+                        "reportingOriginsPerSiteLimitReached",
+                        "exceedsMaxChannelCapacity"
                     ]
                 }
             ],
@@ -19939,12 +20468,45 @@
                     "experimental": true,
                     "parameters": [
                         {
-                            "name": "storageKey",
-                            "type": "string"
-                        },
+                            "name": "bucket",
+                            "$ref": "StorageBucket"
+                        }
+                    ]
+                },
+                {
+                    "name": "runBounceTrackingMitigations",
+                    "description": "Deletes state for sites identified as potential bounce trackers, immediately.",
+                    "experimental": true,
+                    "returns": [
                         {
-                            "name": "bucketName",
-                            "type": "string"
+                            "name": "deletedSites",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "setAttributionReportingLocalTestingMode",
+                    "description": "https://wicg.github.io/attribution-reporting-api/",
+                    "experimental": true,
+                    "parameters": [
+                        {
+                            "name": "enabled",
+                            "description": "If enabled, noise is suppressed and reports are sent immediately.",
+                            "type": "boolean"
+                        }
+                    ]
+                },
+                {
+                    "name": "setAttributionReportingTracking",
+                    "description": "Enables/disables issuing of Attribution Reporting events.",
+                    "experimental": true,
+                    "parameters": [
+                        {
+                            "name": "enable",
+                            "type": "boolean"
                         }
                     ]
                 }
@@ -19962,6 +20524,11 @@
                         {
                             "name": "storageKey",
                             "description": "Storage key to update.",
+                            "type": "string"
+                        },
+                        {
+                            "name": "bucketId",
+                            "description": "Storage bucket to update.",
                             "type": "string"
                         },
                         {
@@ -19984,6 +20551,11 @@
                             "name": "storageKey",
                             "description": "Storage key to update.",
                             "type": "string"
+                        },
+                        {
+                            "name": "bucketId",
+                            "description": "Storage bucket to update.",
+                            "type": "string"
                         }
                     ]
                 },
@@ -19999,6 +20571,11 @@
                         {
                             "name": "storageKey",
                             "description": "Storage key to update.",
+                            "type": "string"
+                        },
+                        {
+                            "name": "bucketId",
+                            "description": "Storage bucket to update.",
                             "type": "string"
                         },
                         {
@@ -20025,6 +20602,11 @@
                         {
                             "name": "storageKey",
                             "description": "Storage key to update.",
+                            "type": "string"
+                        },
+                        {
+                            "name": "bucketId",
+                            "description": "Storage bucket to update.",
                             "type": "string"
                         }
                     ]
@@ -20086,7 +20668,7 @@
                     "name": "storageBucketCreatedOrUpdated",
                     "parameters": [
                         {
-                            "name": "bucket",
+                            "name": "bucketInfo",
                             "$ref": "StorageBucketInfo"
                         }
                     ]
@@ -20097,6 +20679,21 @@
                         {
                             "name": "bucketId",
                             "type": "string"
+                        }
+                    ]
+                },
+                {
+                    "name": "attributionReportingSourceRegistered",
+                    "description": "TODO(crbug.com/1458532): Add other Attribution Reporting events, e.g.\ntrigger registration.",
+                    "experimental": true,
+                    "parameters": [
+                        {
+                            "name": "registration",
+                            "$ref": "AttributionReportingSourceRegistration"
+                        },
+                        {
+                            "name": "result",
+                            "$ref": "AttributionReportingSourceRegistrationResult"
                         }
                     ]
                 }
@@ -21703,7 +22300,7 @@
                 },
                 {
                     "name": "getResponseBody",
-                    "description": "Causes the body of the response to be received from the server and\nreturned as a single string. May only be issued for a request that\nis paused in the Response stage and is mutually exclusive with\ntakeResponseBodyForInterceptionAsStream. Calling other methods that\naffect the request or disabling fetch domain before body is received\nresults in an undefined behavior.",
+                    "description": "Causes the body of the response to be received from the server and\nreturned as a single string. May only be issued for a request that\nis paused in the Response stage and is mutually exclusive with\ntakeResponseBodyForInterceptionAsStream. Calling other methods that\naffect the request or disabling fetch domain before body is received\nresults in an undefined behavior.\nNote that the response body is not available for redirects. Requests\npaused in the _redirect received_ state may be differentiated by\n`responseCode` and presence of `location` response header, see\ncomments to `requestPaused` for details.",
                     "parameters": [
                         {
                             "name": "requestId",
@@ -21744,7 +22341,7 @@
             "events": [
                 {
                     "name": "requestPaused",
-                    "description": "Issued when the domain is enabled and the request URL matches the\nspecified filter. The request is paused until the client responds\nwith one of continueRequest, failRequest or fulfillRequest.\nThe stage of the request can be determined by presence of responseErrorReason\nand responseStatusCode -- the request is at the response stage if either\nof these fields is present and in the request stage otherwise.",
+                    "description": "Issued when the domain is enabled and the request URL matches the\nspecified filter. The request is paused until the client responds\nwith one of continueRequest, failRequest or fulfillRequest.\nThe stage of the request can be determined by presence of responseErrorReason\nand responseStatusCode -- the request is at the response stage if either\nof these fields is present and in the request stage otherwise.\nRedirect responses and subsequent requests are reported similarly to regular\nresponses and requests. Redirect responses may be distinguished by the value\nof `responseStatusCode` (which is one of 301, 302, 303, 307, 308) along with\npresence of the `location` header. Requests resulting from a redirect will\nhave `redirectedRequestId` field set.",
                     "parameters": [
                         {
                             "name": "requestId",
@@ -22983,8 +23580,24 @@
                         },
                         {
                             "name": "sourceText",
-                            "description": "Source text of JSON representing the rule set. If it comes from\n<script> tag, it is the textContent of the node. Note that it is\na JSON for valid case.\n\nSee also:\n- https://wicg.github.io/nav-speculation/speculation-rules.html\n- https://github.com/WICG/nav-speculation/blob/main/triggers.md",
+                            "description": "Source text of JSON representing the rule set. If it comes from\n`<script>` tag, it is the textContent of the node. Note that it is\na JSON for valid case.\n\nSee also:\n- https://wicg.github.io/nav-speculation/speculation-rules.html\n- https://github.com/WICG/nav-speculation/blob/main/triggers.md",
                             "type": "string"
+                        },
+                        {
+                            "name": "backendNodeId",
+                            "description": "A speculation rule set is either added through an inline\n`<script>` tag or through an external resource via the\n'Speculation-Rules' HTTP header. For the first case, we include\nthe BackendNodeId of the relevant `<script>` tag. For the second\ncase, we include the external URL where the rule set was loaded\nfrom, and also RequestId if Network domain is enabled.\n\nSee also:\n- https://wicg.github.io/nav-speculation/speculation-rules.html#speculation-rules-script\n- https://wicg.github.io/nav-speculation/speculation-rules.html#speculation-rules-header",
+                            "optional": true,
+                            "$ref": "DOM.BackendNodeId"
+                        },
+                        {
+                            "name": "url",
+                            "optional": true,
+                            "type": "string"
+                        },
+                        {
+                            "name": "requestId",
+                            "optional": true,
+                            "$ref": "Network.RequestId"
                         },
                         {
                             "name": "errorType",
@@ -23109,7 +23722,6 @@
                         "AudioOutputDeviceRequested",
                         "MixedContent",
                         "TriggerBackgrounded",
-                        "EmbedderTriggeredAndCrossOriginRedirected",
                         "MemoryLimitExceeded",
                         "FailToGetMemoryUsage",
                         "DataSaverEnabled",
@@ -23140,18 +23752,11 @@
                         "SameSiteCrossOriginRedirectNotOptInInMainFrameNavigation",
                         "SameSiteCrossOriginNavigationNotOptInInMainFrameNavigation",
                         "MemoryPressureOnTrigger",
-                        "MemoryPressureAfterTriggered"
-                    ]
-                },
-                {
-                    "id": "PreloadEnabledState",
-                    "type": "string",
-                    "enum": [
-                        "Enabled",
-                        "DisabledByDataSaver",
-                        "DisabledByBatterySaver",
-                        "DisabledByPreference",
-                        "NotSupported"
+                        "MemoryPressureAfterTriggered",
+                        "PrerenderingDisabledByDevTools",
+                        "ResourceLoadBlockedByClient",
+                        "SpeculationRuleRemoved",
+                        "ActivatedWithAuxiliaryBrowsingContexts"
                     ]
                 },
                 {
@@ -23165,6 +23770,43 @@
                         "Success",
                         "Failure",
                         "NotSupported"
+                    ]
+                },
+                {
+                    "id": "PrefetchStatus",
+                    "description": "TODO(https://crbug.com/1384419): revisit the list of PrefetchStatus and\nfilter out the ones that aren't necessary to the developers.",
+                    "type": "string",
+                    "enum": [
+                        "PrefetchAllowed",
+                        "PrefetchFailedIneligibleRedirect",
+                        "PrefetchFailedInvalidRedirect",
+                        "PrefetchFailedMIMENotSupported",
+                        "PrefetchFailedNetError",
+                        "PrefetchFailedNon2XX",
+                        "PrefetchFailedPerPageLimitExceeded",
+                        "PrefetchEvicted",
+                        "PrefetchHeldback",
+                        "PrefetchIneligibleRetryAfter",
+                        "PrefetchIsPrivacyDecoy",
+                        "PrefetchIsStale",
+                        "PrefetchNotEligibleBrowserContextOffTheRecord",
+                        "PrefetchNotEligibleDataSaverEnabled",
+                        "PrefetchNotEligibleExistingProxy",
+                        "PrefetchNotEligibleHostIsNonUnique",
+                        "PrefetchNotEligibleNonDefaultStoragePartition",
+                        "PrefetchNotEligibleSameSiteCrossOriginPrefetchRequiredProxy",
+                        "PrefetchNotEligibleSchemeIsNotHttps",
+                        "PrefetchNotEligibleUserHasCookies",
+                        "PrefetchNotEligibleUserHasServiceWorker",
+                        "PrefetchNotEligibleBatterySaverEnabled",
+                        "PrefetchNotEligiblePreloadingDisabled",
+                        "PrefetchNotFinishedInTime",
+                        "PrefetchNotStarted",
+                        "PrefetchNotUsedCookiesChanged",
+                        "PrefetchProxyNotAvailable",
+                        "PrefetchResponseUsed",
+                        "PrefetchSuccessfulButNotUsed",
+                        "PrefetchNotUsedProbeFailed"
                     ]
                 }
             ],
@@ -23230,8 +23872,24 @@
                     "description": "Fired when a preload enabled state is updated.",
                     "parameters": [
                         {
-                            "name": "state",
-                            "$ref": "PreloadEnabledState"
+                            "name": "disabledByPreference",
+                            "type": "boolean"
+                        },
+                        {
+                            "name": "disabledByDataSaver",
+                            "type": "boolean"
+                        },
+                        {
+                            "name": "disabledByBatterySaver",
+                            "type": "boolean"
+                        },
+                        {
+                            "name": "disabledByHoldbackPrefetchSpeculationRules",
+                            "type": "boolean"
+                        },
+                        {
+                            "name": "disabledByHoldbackPrerenderSpeculationRules",
+                            "type": "boolean"
                         }
                     ]
                 },
@@ -23255,6 +23913,14 @@
                         {
                             "name": "status",
                             "$ref": "PreloadingStatus"
+                        },
+                        {
+                            "name": "prefetchStatus",
+                            "$ref": "PrefetchStatus"
+                        },
+                        {
+                            "name": "requestId",
+                            "$ref": "Network.RequestId"
                         }
                     ]
                 },
@@ -23267,17 +23933,19 @@
                             "$ref": "PreloadingAttemptKey"
                         },
                         {
-                            "name": "initiatingFrameId",
-                            "description": "The frame id of the frame initiating prerender.",
-                            "$ref": "Page.FrameId"
-                        },
-                        {
-                            "name": "prerenderingUrl",
-                            "type": "string"
-                        },
-                        {
                             "name": "status",
                             "$ref": "PreloadingStatus"
+                        },
+                        {
+                            "name": "prerenderStatus",
+                            "optional": true,
+                            "$ref": "PrerenderFinalStatus"
+                        },
+                        {
+                            "name": "disallowedMojoInterface",
+                            "description": "This is used to give users more information about the name of Mojo interface\nthat is incompatible with prerender and has caused the cancellation of the attempt.",
+                            "optional": true,
+                            "type": "string"
                         }
                     ]
                 },
@@ -23312,6 +23980,15 @@
                     "enum": [
                         "SignIn",
                         "SignUp"
+                    ]
+                },
+                {
+                    "id": "DialogType",
+                    "description": "Whether the dialog shown is an account chooser or an auto re-authentication dialog.",
+                    "type": "string",
+                    "enum": [
+                        "AccountChooser",
+                        "AutoReauthn"
                     ]
                 },
                 {
@@ -23372,6 +24049,10 @@
                         {
                             "name": "dialogId",
                             "type": "string"
+                        },
+                        {
+                            "name": "dialogType",
+                            "$ref": "DialogType"
                         },
                         {
                             "name": "accounts",

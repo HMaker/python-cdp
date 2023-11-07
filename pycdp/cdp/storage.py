@@ -432,14 +432,32 @@ class StorageBucketsDurability(enum.Enum):
 
 
 @dataclass
-class StorageBucketInfo:
+class StorageBucket:
     storage_key: SerializedStorageKey
 
+    #: If not specified, it is the default bucket of the storageKey.
+    name: typing.Optional[str] = None
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['storageKey'] = self.storage_key.to_json()
+        if self.name is not None:
+            json['name'] = self.name
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> StorageBucket:
+        return cls(
+            storage_key=SerializedStorageKey.from_json(json['storageKey']),
+            name=str(json['name']) if json.get('name', None) is not None else None,
+        )
+
+
+@dataclass
+class StorageBucketInfo:
+    bucket: StorageBucket
+
     id_: str
-
-    name: str
-
-    is_default: bool
 
     expiration: network.TimeSinceEpoch
 
@@ -452,10 +470,8 @@ class StorageBucketInfo:
 
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
-        json['storageKey'] = self.storage_key.to_json()
+        json['bucket'] = self.bucket.to_json()
         json['id'] = self.id_
-        json['name'] = self.name
-        json['isDefault'] = self.is_default
         json['expiration'] = self.expiration.to_json()
         json['quota'] = self.quota
         json['persistent'] = self.persistent
@@ -465,15 +481,194 @@ class StorageBucketInfo:
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> StorageBucketInfo:
         return cls(
-            storage_key=SerializedStorageKey.from_json(json['storageKey']),
+            bucket=StorageBucket.from_json(json['bucket']),
             id_=str(json['id']),
-            name=str(json['name']),
-            is_default=bool(json['isDefault']),
             expiration=network.TimeSinceEpoch.from_json(json['expiration']),
             quota=float(json['quota']),
             persistent=bool(json['persistent']),
             durability=StorageBucketsDurability.from_json(json['durability']),
         )
+
+
+class AttributionReportingSourceType(enum.Enum):
+    NAVIGATION = "navigation"
+    EVENT = "event"
+
+    def to_json(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_json(cls, json: str) -> AttributionReportingSourceType:
+        return cls(json)
+
+
+class UnsignedInt64AsBase10(str):
+    def to_json(self) -> str:
+        return self
+
+    @classmethod
+    def from_json(cls, json: str) -> UnsignedInt64AsBase10:
+        return cls(json)
+
+    def __repr__(self):
+        return 'UnsignedInt64AsBase10({})'.format(super().__repr__())
+
+
+class UnsignedInt128AsBase16(str):
+    def to_json(self) -> str:
+        return self
+
+    @classmethod
+    def from_json(cls, json: str) -> UnsignedInt128AsBase16:
+        return cls(json)
+
+    def __repr__(self):
+        return 'UnsignedInt128AsBase16({})'.format(super().__repr__())
+
+
+class SignedInt64AsBase10(str):
+    def to_json(self) -> str:
+        return self
+
+    @classmethod
+    def from_json(cls, json: str) -> SignedInt64AsBase10:
+        return cls(json)
+
+    def __repr__(self):
+        return 'SignedInt64AsBase10({})'.format(super().__repr__())
+
+
+@dataclass
+class AttributionReportingFilterDataEntry:
+    key: str
+
+    values: typing.List[str]
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['key'] = self.key
+        json['values'] = [i for i in self.values]
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> AttributionReportingFilterDataEntry:
+        return cls(
+            key=str(json['key']),
+            values=[str(i) for i in json['values']],
+        )
+
+
+@dataclass
+class AttributionReportingAggregationKeysEntry:
+    key: str
+
+    value: UnsignedInt128AsBase16
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['key'] = self.key
+        json['value'] = self.value.to_json()
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> AttributionReportingAggregationKeysEntry:
+        return cls(
+            key=str(json['key']),
+            value=UnsignedInt128AsBase16.from_json(json['value']),
+        )
+
+
+@dataclass
+class AttributionReportingSourceRegistration:
+    time: network.TimeSinceEpoch
+
+    type_: AttributionReportingSourceType
+
+    source_origin: str
+
+    reporting_origin: str
+
+    destination_sites: typing.List[str]
+
+    event_id: UnsignedInt64AsBase10
+
+    priority: SignedInt64AsBase10
+
+    filter_data: typing.List[AttributionReportingFilterDataEntry]
+
+    aggregation_keys: typing.List[AttributionReportingAggregationKeysEntry]
+
+    #: duration in seconds
+    expiry: typing.Optional[int] = None
+
+    #: duration in seconds
+    event_report_window: typing.Optional[int] = None
+
+    #: duration in seconds
+    aggregatable_report_window: typing.Optional[int] = None
+
+    debug_key: typing.Optional[UnsignedInt64AsBase10] = None
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['time'] = self.time.to_json()
+        json['type'] = self.type_.to_json()
+        json['sourceOrigin'] = self.source_origin
+        json['reportingOrigin'] = self.reporting_origin
+        json['destinationSites'] = [i for i in self.destination_sites]
+        json['eventId'] = self.event_id.to_json()
+        json['priority'] = self.priority.to_json()
+        json['filterData'] = [i.to_json() for i in self.filter_data]
+        json['aggregationKeys'] = [i.to_json() for i in self.aggregation_keys]
+        if self.expiry is not None:
+            json['expiry'] = self.expiry
+        if self.event_report_window is not None:
+            json['eventReportWindow'] = self.event_report_window
+        if self.aggregatable_report_window is not None:
+            json['aggregatableReportWindow'] = self.aggregatable_report_window
+        if self.debug_key is not None:
+            json['debugKey'] = self.debug_key.to_json()
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> AttributionReportingSourceRegistration:
+        return cls(
+            time=network.TimeSinceEpoch.from_json(json['time']),
+            type_=AttributionReportingSourceType.from_json(json['type']),
+            source_origin=str(json['sourceOrigin']),
+            reporting_origin=str(json['reportingOrigin']),
+            destination_sites=[str(i) for i in json['destinationSites']],
+            event_id=UnsignedInt64AsBase10.from_json(json['eventId']),
+            priority=SignedInt64AsBase10.from_json(json['priority']),
+            filter_data=[AttributionReportingFilterDataEntry.from_json(i) for i in json['filterData']],
+            aggregation_keys=[AttributionReportingAggregationKeysEntry.from_json(i) for i in json['aggregationKeys']],
+            expiry=int(json['expiry']) if json.get('expiry', None) is not None else None,
+            event_report_window=int(json['eventReportWindow']) if json.get('eventReportWindow', None) is not None else None,
+            aggregatable_report_window=int(json['aggregatableReportWindow']) if json.get('aggregatableReportWindow', None) is not None else None,
+            debug_key=UnsignedInt64AsBase10.from_json(json['debugKey']) if json.get('debugKey', None) is not None else None,
+        )
+
+
+class AttributionReportingSourceRegistrationResult(enum.Enum):
+    SUCCESS = "success"
+    INTERNAL_ERROR = "internalError"
+    INSUFFICIENT_SOURCE_CAPACITY = "insufficientSourceCapacity"
+    INSUFFICIENT_UNIQUE_DESTINATION_CAPACITY = "insufficientUniqueDestinationCapacity"
+    EXCESSIVE_REPORTING_ORIGINS = "excessiveReportingOrigins"
+    PROHIBITED_BY_BROWSER_POLICY = "prohibitedByBrowserPolicy"
+    SUCCESS_NOISED = "successNoised"
+    DESTINATION_REPORTING_LIMIT_REACHED = "destinationReportingLimitReached"
+    DESTINATION_GLOBAL_LIMIT_REACHED = "destinationGlobalLimitReached"
+    DESTINATION_BOTH_LIMITS_REACHED = "destinationBothLimitsReached"
+    REPORTING_ORIGINS_PER_SITE_LIMIT_REACHED = "reportingOriginsPerSiteLimitReached"
+    EXCEEDS_MAX_CHANNEL_CAPACITY = "exceedsMaxChannelCapacity"
+
+    def to_json(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_json(cls, json: str) -> AttributionReportingSourceRegistrationResult:
+        return cls(json)
 
 
 def get_storage_key_for_frame(
@@ -1036,22 +1231,72 @@ def set_storage_bucket_tracking(
 
 
 def delete_storage_bucket(
-        storage_key: str,
-        bucket_name: str
+        bucket: StorageBucket
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
     '''
     Deletes the Storage Bucket with the given storage key and bucket name.
 
     **EXPERIMENTAL**
 
-    :param storage_key:
-    :param bucket_name:
+    :param bucket:
     '''
     params: T_JSON_DICT = dict()
-    params['storageKey'] = storage_key
-    params['bucketName'] = bucket_name
+    params['bucket'] = bucket.to_json()
     cmd_dict: T_JSON_DICT = {
         'method': 'Storage.deleteStorageBucket',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def run_bounce_tracking_mitigations() -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.List[str]]:
+    '''
+    Deletes state for sites identified as potential bounce trackers, immediately.
+
+    **EXPERIMENTAL**
+
+    :returns: 
+    '''
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Storage.runBounceTrackingMitigations',
+    }
+    json = yield cmd_dict
+    return [str(i) for i in json['deletedSites']]
+
+
+def set_attribution_reporting_local_testing_mode(
+        enabled: bool
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    https://wicg.github.io/attribution-reporting-api/
+
+    **EXPERIMENTAL**
+
+    :param enabled: If enabled, noise is suppressed and reports are sent immediately.
+    '''
+    params: T_JSON_DICT = dict()
+    params['enabled'] = enabled
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Storage.setAttributionReportingLocalTestingMode',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def set_attribution_reporting_tracking(
+        enable: bool
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Enables/disables issuing of Attribution Reporting events.
+
+    **EXPERIMENTAL**
+
+    :param enable:
+    '''
+    params: T_JSON_DICT = dict()
+    params['enable'] = enable
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Storage.setAttributionReportingTracking',
         'params': params,
     }
     json = yield cmd_dict
@@ -1067,6 +1312,8 @@ class CacheStorageContentUpdated:
     origin: str
     #: Storage key to update.
     storage_key: str
+    #: Storage bucket to update.
+    bucket_id: str
     #: Name of cache in origin.
     cache_name: str
 
@@ -1075,6 +1322,7 @@ class CacheStorageContentUpdated:
         return cls(
             origin=str(json['origin']),
             storage_key=str(json['storageKey']),
+            bucket_id=str(json['bucketId']),
             cache_name=str(json['cacheName'])
         )
 
@@ -1089,12 +1337,15 @@ class CacheStorageListUpdated:
     origin: str
     #: Storage key to update.
     storage_key: str
+    #: Storage bucket to update.
+    bucket_id: str
 
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> CacheStorageListUpdated:
         return cls(
             origin=str(json['origin']),
-            storage_key=str(json['storageKey'])
+            storage_key=str(json['storageKey']),
+            bucket_id=str(json['bucketId'])
         )
 
 
@@ -1108,6 +1359,8 @@ class IndexedDBContentUpdated:
     origin: str
     #: Storage key to update.
     storage_key: str
+    #: Storage bucket to update.
+    bucket_id: str
     #: Database to update.
     database_name: str
     #: ObjectStore to update.
@@ -1118,6 +1371,7 @@ class IndexedDBContentUpdated:
         return cls(
             origin=str(json['origin']),
             storage_key=str(json['storageKey']),
+            bucket_id=str(json['bucketId']),
             database_name=str(json['databaseName']),
             object_store_name=str(json['objectStoreName'])
         )
@@ -1133,12 +1387,15 @@ class IndexedDBListUpdated:
     origin: str
     #: Storage key to update.
     storage_key: str
+    #: Storage bucket to update.
+    bucket_id: str
 
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> IndexedDBListUpdated:
         return cls(
             origin=str(json['origin']),
-            storage_key=str(json['storageKey'])
+            storage_key=str(json['storageKey']),
+            bucket_id=str(json['bucketId'])
         )
 
 
@@ -1196,12 +1453,12 @@ class SharedStorageAccessed:
 @event_class('Storage.storageBucketCreatedOrUpdated')
 @dataclass
 class StorageBucketCreatedOrUpdated:
-    bucket: StorageBucketInfo
+    bucket_info: StorageBucketInfo
 
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> StorageBucketCreatedOrUpdated:
         return cls(
-            bucket=StorageBucketInfo.from_json(json['bucket'])
+            bucket_info=StorageBucketInfo.from_json(json['bucketInfo'])
         )
 
 
@@ -1214,4 +1471,24 @@ class StorageBucketDeleted:
     def from_json(cls, json: T_JSON_DICT) -> StorageBucketDeleted:
         return cls(
             bucket_id=str(json['bucketId'])
+        )
+
+
+@event_class('Storage.attributionReportingSourceRegistered')
+@dataclass
+class AttributionReportingSourceRegistered:
+    '''
+    **EXPERIMENTAL**
+
+    TODO(crbug.com/1458532): Add other Attribution Reporting events, e.g.
+    trigger registration.
+    '''
+    registration: AttributionReportingSourceRegistration
+    result: AttributionReportingSourceRegistrationResult
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> AttributionReportingSourceRegistered:
+        return cls(
+            registration=AttributionReportingSourceRegistration.from_json(json['registration']),
+            result=AttributionReportingSourceRegistrationResult.from_json(json['result'])
         )

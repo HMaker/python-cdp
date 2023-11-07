@@ -28,6 +28,21 @@ class LoginState(enum.Enum):
         return cls(json)
 
 
+class DialogType(enum.Enum):
+    '''
+    Whether the dialog shown is an account chooser or an auto re-authentication dialog.
+    '''
+    ACCOUNT_CHOOSER = "AccountChooser"
+    AUTO_REAUTHN = "AutoReauthn"
+
+    def to_json(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_json(cls, json: str) -> DialogType:
+        return cls(json)
+
+
 @dataclass
 class Account:
     '''
@@ -162,6 +177,7 @@ def reset_cooldown() -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
 @dataclass
 class DialogShown:
     dialog_id: str
+    dialog_type: DialogType
     accounts: typing.List[Account]
     #: These exist primarily so that the caller can verify the
     #: RP context was used appropriately.
@@ -172,6 +188,7 @@ class DialogShown:
     def from_json(cls, json: T_JSON_DICT) -> DialogShown:
         return cls(
             dialog_id=str(json['dialogId']),
+            dialog_type=DialogType.from_json(json['dialogType']),
             accounts=[Account.from_json(i) for i in json['accounts']],
             title=str(json['title']),
             subtitle=str(json['subtitle']) if json.get('subtitle', None) is not None else None

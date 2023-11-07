@@ -59,6 +59,11 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: Specificity
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: SelectorList
       :members:
       :undoc-members:
@@ -70,6 +75,11 @@ arguments to other commands.
       :exclude-members: from_json, to_json
 
 .. autoclass:: CSSRule
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: CSSRuleType
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json

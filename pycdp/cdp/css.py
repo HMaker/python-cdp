@@ -159,11 +159,16 @@ class Value:
     #: Value range in the underlying resource (if available).
     range_: typing.Optional[SourceRange] = None
 
+    #: Specificity of the selector.
+    specificity: typing.Optional[Specificity] = None
+
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
         json['text'] = self.text
         if self.range_ is not None:
             json['range'] = self.range_.to_json()
+        if self.specificity is not None:
+            json['specificity'] = self.specificity.to_json()
         return json
 
     @classmethod
@@ -171,6 +176,39 @@ class Value:
         return cls(
             text=str(json['text']),
             range_=SourceRange.from_json(json['range']) if json.get('range', None) is not None else None,
+            specificity=Specificity.from_json(json['specificity']) if json.get('specificity', None) is not None else None,
+        )
+
+
+@dataclass
+class Specificity:
+    '''
+    Specificity:
+    https://drafts.csswg.org/selectors/#specificity-rules
+    '''
+    #: The a component, which represents the number of ID selectors.
+    a: int
+
+    #: The b component, which represents the number of class selectors, attributes selectors, and
+    #: pseudo-classes.
+    b: int
+
+    #: The c component, which represents the number of type selectors and pseudo-elements.
+    c: int
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['a'] = self.a
+        json['b'] = self.b
+        json['c'] = self.c
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> Specificity:
+        return cls(
+            a=int(json['a']),
+            b=int(json['b']),
+            c=int(json['c']),
         )
 
 
@@ -230,7 +268,7 @@ class CSSStyleSheetHeader:
 
     #: Whether this stylesheet is mutable. Inline stylesheets become mutable
     #: after they have been modified via CSSOM API.
-    #: <link> element's stylesheets become mutable only if DevTools modifies them.
+    #: ``<link>`` element's stylesheets become mutable only if DevTools modifies them.
     #: Constructed stylesheets (new CSSStyleSheet()) are mutable immediately after creation.
     is_mutable: bool
 
@@ -356,6 +394,9 @@ class CSSRule:
     #: The array enumerates @scope at-rules starting with the innermost one, going outwards.
     scopes: typing.Optional[typing.List[CSSScope]] = None
 
+    #: The array keeps the types of ancestor CSSRules from the innermost going outwards.
+    rule_types: typing.Optional[typing.List[CSSRuleType]] = None
+
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
         json['selectorList'] = self.selector_list.to_json()
@@ -375,6 +416,8 @@ class CSSRule:
             json['layers'] = [i.to_json() for i in self.layers]
         if self.scopes is not None:
             json['scopes'] = [i.to_json() for i in self.scopes]
+        if self.rule_types is not None:
+            json['ruleTypes'] = [i.to_json() for i in self.rule_types]
         return json
 
     @classmethod
@@ -390,7 +433,28 @@ class CSSRule:
             supports=[CSSSupports.from_json(i) for i in json['supports']] if json.get('supports', None) is not None else None,
             layers=[CSSLayer.from_json(i) for i in json['layers']] if json.get('layers', None) is not None else None,
             scopes=[CSSScope.from_json(i) for i in json['scopes']] if json.get('scopes', None) is not None else None,
+            rule_types=[CSSRuleType.from_json(i) for i in json['ruleTypes']] if json.get('ruleTypes', None) is not None else None,
         )
+
+
+class CSSRuleType(enum.Enum):
+    '''
+    Enum indicating the type of a CSS rule, used to represent the order of a style rule's ancestors.
+    This list only contains rule types that are collected during the ancestor rule collection.
+    '''
+    MEDIA_RULE = "MediaRule"
+    SUPPORTS_RULE = "SupportsRule"
+    CONTAINER_RULE = "ContainerRule"
+    LAYER_RULE = "LayerRule"
+    SCOPE_RULE = "ScopeRule"
+    STYLE_RULE = "StyleRule"
+
+    def to_json(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_json(cls, json: str) -> CSSRuleType:
+        return cls(json)
 
 
 @dataclass

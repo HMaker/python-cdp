@@ -79,6 +79,8 @@ commands, and ``z`` is the return type you should pay attention
 to. For more information, see
 :ref:`Getting Started: Commands <getting-started-commands>`.
 
+.. autofunction:: add_privacy_sandbox_enrollment_override
+
 .. autofunction:: cancel_download
 
 .. autofunction:: close

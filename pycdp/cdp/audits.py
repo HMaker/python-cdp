@@ -118,6 +118,7 @@ class CookieWarningReason(enum.Enum):
     WARN_SAME_SITE_LAX_CROSS_DOWNGRADE_LAX = "WarnSameSiteLaxCrossDowngradeLax"
     WARN_ATTRIBUTE_VALUE_EXCEEDS_MAX_SIZE = "WarnAttributeValueExceedsMaxSize"
     WARN_DOMAIN_NON_ASCII = "WarnDomainNonASCII"
+    WARN_THIRD_PARTY_PHASEOUT = "WarnThirdPartyPhaseout"
 
     def to_json(self) -> str:
         return self.value
@@ -535,59 +536,6 @@ class SharedArrayBufferIssueDetails:
         )
 
 
-class TwaQualityEnforcementViolationType(enum.Enum):
-    K_HTTP_ERROR = "kHttpError"
-    K_UNAVAILABLE_OFFLINE = "kUnavailableOffline"
-    K_DIGITAL_ASSET_LINKS = "kDigitalAssetLinks"
-
-    def to_json(self) -> str:
-        return self.value
-
-    @classmethod
-    def from_json(cls, json: str) -> TwaQualityEnforcementViolationType:
-        return cls(json)
-
-
-@dataclass
-class TrustedWebActivityIssueDetails:
-    #: The url that triggers the violation.
-    url: str
-
-    violation_type: TwaQualityEnforcementViolationType
-
-    http_status_code: typing.Optional[int] = None
-
-    #: The package name of the Trusted Web Activity client app. This field is
-    #: only used when violation type is kDigitalAssetLinks.
-    package_name: typing.Optional[str] = None
-
-    #: The signature of the Trusted Web Activity client app. This field is only
-    #: used when violation type is kDigitalAssetLinks.
-    signature: typing.Optional[str] = None
-
-    def to_json(self) -> T_JSON_DICT:
-        json: T_JSON_DICT = dict()
-        json['url'] = self.url
-        json['violationType'] = self.violation_type.to_json()
-        if self.http_status_code is not None:
-            json['httpStatusCode'] = self.http_status_code
-        if self.package_name is not None:
-            json['packageName'] = self.package_name
-        if self.signature is not None:
-            json['signature'] = self.signature
-        return json
-
-    @classmethod
-    def from_json(cls, json: T_JSON_DICT) -> TrustedWebActivityIssueDetails:
-        return cls(
-            url=str(json['url']),
-            violation_type=TwaQualityEnforcementViolationType.from_json(json['violationType']),
-            http_status_code=int(json['httpStatusCode']) if json.get('httpStatusCode', None) is not None else None,
-            package_name=str(json['packageName']) if json.get('packageName', None) is not None else None,
-            signature=str(json['signature']) if json.get('signature', None) is not None else None,
-        )
-
-
 @dataclass
 class LowTextContrastIssueDetails:
     violating_node_id: dom.BackendNodeId
@@ -682,7 +630,6 @@ class AttributionReportingIssueType(enum.Enum):
     INSECURE_CONTEXT = "InsecureContext"
     INVALID_HEADER = "InvalidHeader"
     INVALID_REGISTER_TRIGGER_HEADER = "InvalidRegisterTriggerHeader"
-    INVALID_ELIGIBLE_HEADER = "InvalidEligibleHeader"
     SOURCE_AND_TRIGGER_HEADERS = "SourceAndTriggerHeaders"
     SOURCE_IGNORED = "SourceIgnored"
     TRIGGER_IGNORED = "TriggerIgnored"
@@ -691,6 +638,8 @@ class AttributionReportingIssueType(enum.Enum):
     INVALID_REGISTER_OS_SOURCE_HEADER = "InvalidRegisterOsSourceHeader"
     INVALID_REGISTER_OS_TRIGGER_HEADER = "InvalidRegisterOsTriggerHeader"
     WEB_AND_OS_HEADERS = "WebAndOsHeaders"
+    NO_WEB_OR_OS_SUPPORT = "NoWebOrOsSupport"
+    NAVIGATION_REGISTRATION_WITHOUT_TRANSIENT_USER_ACTIVATION = "NavigationRegistrationWithoutTransientUserActivation"
 
     def to_json(self) -> str:
         return self.value
@@ -806,6 +755,7 @@ class GenericIssueErrorType(enum.Enum):
     FORM_LABEL_HAS_NEITHER_FOR_NOR_NESTED_INPUT = "FormLabelHasNeitherForNorNestedInput"
     FORM_LABEL_FOR_MATCHES_NON_EXISTING_ID_ERROR = "FormLabelForMatchesNonExistingIdError"
     FORM_INPUT_HAS_WRONG_BUT_WELL_INTENDED_AUTOCOMPLETE_VALUE_ERROR = "FormInputHasWrongButWellIntendedAutocompleteValueError"
+    RESPONSE_WAS_BLOCKED_BY_ORB = "ResponseWasBlockedByORB"
 
     def to_json(self) -> str:
         return self.value
@@ -829,6 +779,8 @@ class GenericIssueDetails:
 
     violating_node_attribute: typing.Optional[str] = None
 
+    request: typing.Optional[AffectedRequest] = None
+
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
         json['errorType'] = self.error_type.to_json()
@@ -838,6 +790,8 @@ class GenericIssueDetails:
             json['violatingNodeId'] = self.violating_node_id.to_json()
         if self.violating_node_attribute is not None:
             json['violatingNodeAttribute'] = self.violating_node_attribute
+        if self.request is not None:
+            json['request'] = self.request.to_json()
         return json
 
     @classmethod
@@ -847,6 +801,7 @@ class GenericIssueDetails:
             frame_id=page.FrameId.from_json(json['frameId']) if json.get('frameId', None) is not None else None,
             violating_node_id=dom.BackendNodeId.from_json(json['violatingNodeId']) if json.get('violatingNodeId', None) is not None else None,
             violating_node_attribute=str(json['violatingNodeAttribute']) if json.get('violatingNodeAttribute', None) is not None else None,
+            request=AffectedRequest.from_json(json['request']) if json.get('request', None) is not None else None,
         )
 
 
@@ -971,12 +926,54 @@ class FederatedAuthRequestIssueReason(enum.Enum):
     ERROR_ID_TOKEN = "ErrorIdToken"
     CANCELED = "Canceled"
     RP_PAGE_NOT_VISIBLE = "RpPageNotVisible"
+    SILENT_MEDIATION_FAILURE = "SilentMediationFailure"
+    THIRD_PARTY_COOKIES_BLOCKED = "ThirdPartyCookiesBlocked"
 
     def to_json(self) -> str:
         return self.value
 
     @classmethod
     def from_json(cls, json: str) -> FederatedAuthRequestIssueReason:
+        return cls(json)
+
+
+@dataclass
+class FederatedAuthUserInfoRequestIssueDetails:
+    federated_auth_user_info_request_issue_reason: FederatedAuthUserInfoRequestIssueReason
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['federatedAuthUserInfoRequestIssueReason'] = self.federated_auth_user_info_request_issue_reason.to_json()
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> FederatedAuthUserInfoRequestIssueDetails:
+        return cls(
+            federated_auth_user_info_request_issue_reason=FederatedAuthUserInfoRequestIssueReason.from_json(json['federatedAuthUserInfoRequestIssueReason']),
+        )
+
+
+class FederatedAuthUserInfoRequestIssueReason(enum.Enum):
+    '''
+    Represents the failure reason when a getUserInfo() call fails.
+    Should be updated alongside FederatedAuthUserInfoRequestResult in
+    third_party/blink/public/mojom/devtools/inspector_issue.mojom.
+    '''
+    NOT_SAME_ORIGIN = "NotSameOrigin"
+    NOT_IFRAME = "NotIframe"
+    NOT_POTENTIALLY_TRUSTWORTHY = "NotPotentiallyTrustworthy"
+    NO_API_PERMISSION = "NoApiPermission"
+    NOT_SIGNED_IN_WITH_IDP = "NotSignedInWithIdp"
+    NO_ACCOUNT_SHARING_PERMISSION = "NoAccountSharingPermission"
+    INVALID_CONFIG_OR_WELL_KNOWN = "InvalidConfigOrWellKnown"
+    INVALID_ACCOUNTS_RESPONSE = "InvalidAccountsResponse"
+    NO_RETURNING_USER_FROM_FETCHED_ACCOUNTS = "NoReturningUserFromFetchedAccounts"
+
+    def to_json(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_json(cls, json: str) -> FederatedAuthUserInfoRequestIssueReason:
         return cls(json)
 
 
@@ -1004,6 +1001,76 @@ class ClientHintIssueDetails:
         )
 
 
+@dataclass
+class FailedRequestInfo:
+    #: The URL that failed to load.
+    url: str
+
+    #: The failure message for the failed request.
+    failure_message: str
+
+    request_id: typing.Optional[network.RequestId] = None
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['url'] = self.url
+        json['failureMessage'] = self.failure_message
+        if self.request_id is not None:
+            json['requestId'] = self.request_id.to_json()
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> FailedRequestInfo:
+        return cls(
+            url=str(json['url']),
+            failure_message=str(json['failureMessage']),
+            request_id=network.RequestId.from_json(json['requestId']) if json.get('requestId', None) is not None else None,
+        )
+
+
+class StyleSheetLoadingIssueReason(enum.Enum):
+    LATE_IMPORT_RULE = "LateImportRule"
+    REQUEST_FAILED = "RequestFailed"
+
+    def to_json(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_json(cls, json: str) -> StyleSheetLoadingIssueReason:
+        return cls(json)
+
+
+@dataclass
+class StylesheetLoadingIssueDetails:
+    '''
+    This issue warns when a referenced stylesheet couldn't be loaded.
+    '''
+    #: Source code position that referenced the failing stylesheet.
+    source_code_location: SourceCodeLocation
+
+    #: Reason why the stylesheet couldn't be loaded.
+    style_sheet_loading_issue_reason: StyleSheetLoadingIssueReason
+
+    #: Contains additional info when the failure was due to a request.
+    failed_request_info: typing.Optional[FailedRequestInfo] = None
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['sourceCodeLocation'] = self.source_code_location.to_json()
+        json['styleSheetLoadingIssueReason'] = self.style_sheet_loading_issue_reason.to_json()
+        if self.failed_request_info is not None:
+            json['failedRequestInfo'] = self.failed_request_info.to_json()
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> StylesheetLoadingIssueDetails:
+        return cls(
+            source_code_location=SourceCodeLocation.from_json(json['sourceCodeLocation']),
+            style_sheet_loading_issue_reason=StyleSheetLoadingIssueReason.from_json(json['styleSheetLoadingIssueReason']),
+            failed_request_info=FailedRequestInfo.from_json(json['failedRequestInfo']) if json.get('failedRequestInfo', None) is not None else None,
+        )
+
+
 class InspectorIssueCode(enum.Enum):
     '''
     A unique identifier for the type of issue. Each type may use one of the
@@ -1016,7 +1083,6 @@ class InspectorIssueCode(enum.Enum):
     HEAVY_AD_ISSUE = "HeavyAdIssue"
     CONTENT_SECURITY_POLICY_ISSUE = "ContentSecurityPolicyIssue"
     SHARED_ARRAY_BUFFER_ISSUE = "SharedArrayBufferIssue"
-    TRUSTED_WEB_ACTIVITY_ISSUE = "TrustedWebActivityIssue"
     LOW_TEXT_CONTRAST_ISSUE = "LowTextContrastIssue"
     CORS_ISSUE = "CorsIssue"
     ATTRIBUTION_REPORTING_ISSUE = "AttributionReportingIssue"
@@ -1027,6 +1093,8 @@ class InspectorIssueCode(enum.Enum):
     CLIENT_HINT_ISSUE = "ClientHintIssue"
     FEDERATED_AUTH_REQUEST_ISSUE = "FederatedAuthRequestIssue"
     BOUNCE_TRACKING_ISSUE = "BounceTrackingIssue"
+    STYLESHEET_LOADING_ISSUE = "StylesheetLoadingIssue"
+    FEDERATED_AUTH_USER_INFO_REQUEST_ISSUE = "FederatedAuthUserInfoRequestIssue"
 
     def to_json(self) -> str:
         return self.value
@@ -1055,8 +1123,6 @@ class InspectorIssueDetails:
 
     shared_array_buffer_issue_details: typing.Optional[SharedArrayBufferIssueDetails] = None
 
-    twa_quality_enforcement_details: typing.Optional[TrustedWebActivityIssueDetails] = None
-
     low_text_contrast_issue_details: typing.Optional[LowTextContrastIssueDetails] = None
 
     cors_issue_details: typing.Optional[CorsIssueDetails] = None
@@ -1077,6 +1143,10 @@ class InspectorIssueDetails:
 
     bounce_tracking_issue_details: typing.Optional[BounceTrackingIssueDetails] = None
 
+    stylesheet_loading_issue_details: typing.Optional[StylesheetLoadingIssueDetails] = None
+
+    federated_auth_user_info_request_issue_details: typing.Optional[FederatedAuthUserInfoRequestIssueDetails] = None
+
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
         if self.cookie_issue_details is not None:
@@ -1091,8 +1161,6 @@ class InspectorIssueDetails:
             json['contentSecurityPolicyIssueDetails'] = self.content_security_policy_issue_details.to_json()
         if self.shared_array_buffer_issue_details is not None:
             json['sharedArrayBufferIssueDetails'] = self.shared_array_buffer_issue_details.to_json()
-        if self.twa_quality_enforcement_details is not None:
-            json['twaQualityEnforcementDetails'] = self.twa_quality_enforcement_details.to_json()
         if self.low_text_contrast_issue_details is not None:
             json['lowTextContrastIssueDetails'] = self.low_text_contrast_issue_details.to_json()
         if self.cors_issue_details is not None:
@@ -1113,6 +1181,10 @@ class InspectorIssueDetails:
             json['federatedAuthRequestIssueDetails'] = self.federated_auth_request_issue_details.to_json()
         if self.bounce_tracking_issue_details is not None:
             json['bounceTrackingIssueDetails'] = self.bounce_tracking_issue_details.to_json()
+        if self.stylesheet_loading_issue_details is not None:
+            json['stylesheetLoadingIssueDetails'] = self.stylesheet_loading_issue_details.to_json()
+        if self.federated_auth_user_info_request_issue_details is not None:
+            json['federatedAuthUserInfoRequestIssueDetails'] = self.federated_auth_user_info_request_issue_details.to_json()
         return json
 
     @classmethod
@@ -1124,7 +1196,6 @@ class InspectorIssueDetails:
             heavy_ad_issue_details=HeavyAdIssueDetails.from_json(json['heavyAdIssueDetails']) if json.get('heavyAdIssueDetails', None) is not None else None,
             content_security_policy_issue_details=ContentSecurityPolicyIssueDetails.from_json(json['contentSecurityPolicyIssueDetails']) if json.get('contentSecurityPolicyIssueDetails', None) is not None else None,
             shared_array_buffer_issue_details=SharedArrayBufferIssueDetails.from_json(json['sharedArrayBufferIssueDetails']) if json.get('sharedArrayBufferIssueDetails', None) is not None else None,
-            twa_quality_enforcement_details=TrustedWebActivityIssueDetails.from_json(json['twaQualityEnforcementDetails']) if json.get('twaQualityEnforcementDetails', None) is not None else None,
             low_text_contrast_issue_details=LowTextContrastIssueDetails.from_json(json['lowTextContrastIssueDetails']) if json.get('lowTextContrastIssueDetails', None) is not None else None,
             cors_issue_details=CorsIssueDetails.from_json(json['corsIssueDetails']) if json.get('corsIssueDetails', None) is not None else None,
             attribution_reporting_issue_details=AttributionReportingIssueDetails.from_json(json['attributionReportingIssueDetails']) if json.get('attributionReportingIssueDetails', None) is not None else None,
@@ -1135,6 +1206,8 @@ class InspectorIssueDetails:
             client_hint_issue_details=ClientHintIssueDetails.from_json(json['clientHintIssueDetails']) if json.get('clientHintIssueDetails', None) is not None else None,
             federated_auth_request_issue_details=FederatedAuthRequestIssueDetails.from_json(json['federatedAuthRequestIssueDetails']) if json.get('federatedAuthRequestIssueDetails', None) is not None else None,
             bounce_tracking_issue_details=BounceTrackingIssueDetails.from_json(json['bounceTrackingIssueDetails']) if json.get('bounceTrackingIssueDetails', None) is not None else None,
+            stylesheet_loading_issue_details=StylesheetLoadingIssueDetails.from_json(json['stylesheetLoadingIssueDetails']) if json.get('stylesheetLoadingIssueDetails', None) is not None else None,
+            federated_auth_user_info_request_issue_details=FederatedAuthUserInfoRequestIssueDetails.from_json(json['federatedAuthUserInfoRequestIssueDetails']) if json.get('federatedAuthUserInfoRequestIssueDetails', None) is not None else None,
         )
 
 
@@ -1261,6 +1334,20 @@ def check_contrast(
         'params': params,
     }
     json = yield cmd_dict
+
+
+def check_forms_issues() -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.List[GenericIssueDetails]]:
+    '''
+    Runs the form issues check for the target page. Found issues are reported
+    using Audits.issueAdded event.
+
+    :returns: 
+    '''
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Audits.checkFormsIssues',
+    }
+    json = yield cmd_dict
+    return [GenericIssueDetails.from_json(i) for i in json['formIssues']]
 
 
 @event_class('Audits.issueAdded')

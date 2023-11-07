@@ -188,11 +188,10 @@ class PermissionsPolicyFeature(enum.Enum):
     CH_UA_PLATFORM = "ch-ua-platform"
     CH_UA_MODEL = "ch-ua-model"
     CH_UA_MOBILE = "ch-ua-mobile"
-    CH_UA_FULL = "ch-ua-full"
+    CH_UA_FORM_FACTOR = "ch-ua-form-factor"
     CH_UA_FULL_VERSION = "ch-ua-full-version"
     CH_UA_FULL_VERSION_LIST = "ch-ua-full-version-list"
     CH_UA_PLATFORM_VERSION = "ch-ua-platform-version"
-    CH_UA_REDUCED = "ch-ua-reduced"
     CH_UA_WOW64 = "ch-ua-wow64"
     CH_VIEWPORT_HEIGHT = "ch-viewport-height"
     CH_VIEWPORT_WIDTH = "ch-viewport-width"
@@ -227,6 +226,8 @@ class PermissionsPolicyFeature(enum.Enum):
     PAYMENT = "payment"
     PICTURE_IN_PICTURE = "picture-in-picture"
     PRIVATE_AGGREGATION = "private-aggregation"
+    PRIVATE_STATE_TOKEN_ISSUANCE = "private-state-token-issuance"
+    PRIVATE_STATE_TOKEN_REDEMPTION = "private-state-token-redemption"
     PUBLICKEY_CREDENTIALS_GET = "publickey-credentials-get"
     RUN_AD_AUCTION = "run-ad-auction"
     SCREEN_WAKE_LOCK = "screen-wake-lock"
@@ -237,7 +238,6 @@ class PermissionsPolicyFeature(enum.Enum):
     SMART_CARD = "smart-card"
     STORAGE_ACCESS = "storage-access"
     SYNC_XHR = "sync-xhr"
-    TRUST_TOKEN_REDEMPTION = "trust-token-redemption"
     UNLOAD = "unload"
     USB = "usb"
     VERTICAL_SCROLL = "vertical-scroll"
@@ -1322,6 +1322,9 @@ class BackForwardCacheNotRestoredReason(enum.Enum):
     ACTIVATION_NAVIGATIONS_DISALLOWED_FOR_BUG1234857 = "ActivationNavigationsDisallowedForBug1234857"
     ERROR_DOCUMENT = "ErrorDocument"
     FENCED_FRAMES_EMBEDDER = "FencedFramesEmbedder"
+    COOKIE_DISABLED = "CookieDisabled"
+    HTTP_AUTH_REQUIRED = "HTTPAuthRequired"
+    COOKIE_FLUSHED = "CookieFlushed"
     WEB_SOCKET = "WebSocket"
     WEB_TRANSPORT = "WebTransport"
     WEB_RTC = "WebRTC"
@@ -1333,14 +1336,12 @@ class BackForwardCacheNotRestoredReason(enum.Enum):
     DOCUMENT_LOADED = "DocumentLoaded"
     DEDICATED_WORKER_OR_WORKLET = "DedicatedWorkerOrWorklet"
     OUTSTANDING_NETWORK_REQUEST_OTHERS = "OutstandingNetworkRequestOthers"
-    OUTSTANDING_INDEXED_DB_TRANSACTION = "OutstandingIndexedDBTransaction"
     REQUESTED_MIDI_PERMISSION = "RequestedMIDIPermission"
     REQUESTED_AUDIO_CAPTURE_PERMISSION = "RequestedAudioCapturePermission"
     REQUESTED_VIDEO_CAPTURE_PERMISSION = "RequestedVideoCapturePermission"
     REQUESTED_BACK_FORWARD_CACHE_BLOCKED_SENSORS = "RequestedBackForwardCacheBlockedSensors"
     REQUESTED_BACKGROUND_WORK_PERMISSION = "RequestedBackgroundWorkPermission"
     BROADCAST_CHANNEL = "BroadcastChannel"
-    INDEXED_DB_CONNECTION = "IndexedDBConnection"
     WEB_XR = "WebXR"
     SHARED_WORKER = "SharedWorker"
     WEB_LOCKS = "WebLocks"
@@ -1367,7 +1368,10 @@ class BackForwardCacheNotRestoredReason(enum.Enum):
     KEEPALIVE_REQUEST = "KeepaliveRequest"
     INDEXED_DB_EVENT = "IndexedDBEvent"
     DUMMY = "Dummy"
-    AUTHORIZATION_HEADER = "AuthorizationHeader"
+    JS_NETWORK_REQUEST_RECEIVED_CACHE_CONTROL_NO_STORE_RESOURCE = "JsNetworkRequestReceivedCacheControlNoStoreResource"
+    WEB_RTC_STICKY = "WebRTCSticky"
+    WEB_TRANSPORT_STICKY = "WebTransportSticky"
+    WEB_SOCKET_STICKY = "WebSocketSticky"
     CONTENT_SECURITY_HANDLER = "ContentSecurityHandler"
     CONTENT_WEB_AUTHENTICATION_API = "ContentWebAuthenticationAPI"
     CONTENT_FILE_CHOOSER = "ContentFileChooser"
@@ -1502,7 +1506,8 @@ def add_script_to_evaluate_on_load(
 def add_script_to_evaluate_on_new_document(
         source: str,
         world_name: typing.Optional[str] = None,
-        include_command_line_api: typing.Optional[bool] = None
+        include_command_line_api: typing.Optional[bool] = None,
+        run_immediately: typing.Optional[bool] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,ScriptIdentifier]:
     '''
     Evaluates given script in every frame upon creation (before loading frame's scripts).
@@ -1510,6 +1515,7 @@ def add_script_to_evaluate_on_new_document(
     :param source:
     :param world_name: **(EXPERIMENTAL)** *(Optional)* If specified, creates an isolated world with the given name and evaluates given script in it. This world name will be used as the ExecutionContextDescription::name when the corresponding event is emitted.
     :param include_command_line_api: **(EXPERIMENTAL)** *(Optional)* Specifies whether command line API should be available to the script, defaults to false.
+    :param run_immediately: **(EXPERIMENTAL)** *(Optional)* If true, runs the script immediately on existing execution contexts or worlds. Default: false.
     :returns: Identifier of the added script.
     '''
     params: T_JSON_DICT = dict()
@@ -1518,6 +1524,8 @@ def add_script_to_evaluate_on_new_document(
         params['worldName'] = world_name
     if include_command_line_api is not None:
         params['includeCommandLineAPI'] = include_command_line_api
+    if run_immediately is not None:
+        params['runImmediately'] = run_immediately
     cmd_dict: T_JSON_DICT = {
         'method': 'Page.addScriptToEvaluateOnNewDocument',
         'params': params,
@@ -2043,7 +2051,8 @@ def print_to_pdf(
         header_template: typing.Optional[str] = None,
         footer_template: typing.Optional[str] = None,
         prefer_css_page_size: typing.Optional[bool] = None,
-        transfer_mode: typing.Optional[str] = None
+        transfer_mode: typing.Optional[str] = None,
+        generate_tagged_pdf: typing.Optional[bool] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.Tuple[str, typing.Optional[io.StreamHandle]]]:
     '''
     Print page as PDF.
@@ -2063,6 +2072,7 @@ def print_to_pdf(
     :param footer_template: *(Optional)* HTML template for the print footer. Should use the same format as the ````headerTemplate````.
     :param prefer_css_page_size: *(Optional)* Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size.
     :param transfer_mode: **(EXPERIMENTAL)** *(Optional)* return as stream
+    :param generate_tagged_pdf: **(EXPERIMENTAL)** *(Optional)* Whether or not to generate tagged (accessible) PDF. Defaults to embedder choice.
     :returns: A tuple with the following items:
 
         0. **data** - Base64-encoded pdf data. Empty if `` returnAsStream` is specified. (Encoded as a base64 string when passed over JSON)
@@ -2099,6 +2109,8 @@ def print_to_pdf(
         params['preferCSSPageSize'] = prefer_css_page_size
     if transfer_mode is not None:
         params['transferMode'] = transfer_mode
+    if generate_tagged_pdf is not None:
+        params['generateTaggedPDF'] = generate_tagged_pdf
     cmd_dict: T_JSON_DICT = {
         'method': 'Page.printToPDF',
         'params': params,
@@ -2819,6 +2831,31 @@ def set_intercept_file_chooser_dialog(
     json = yield cmd_dict
 
 
+def set_prerendering_allowed(
+        is_allowed: bool
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Enable/disable prerendering manually.
+
+    This command is a short-term solution for https://crbug.com/1440085.
+    See https://docs.google.com/document/d/12HVmFxYj5Jc-eJr5OmWsa2bqTJsbgGLKI6ZIyx0_wpA
+    for more details.
+
+    TODO(https://crbug.com/1440085): Remove this once Puppeteer supports tab targets.
+
+    **EXPERIMENTAL**
+
+    :param is_allowed:
+    '''
+    params: T_JSON_DICT = dict()
+    params['isAllowed'] = is_allowed
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Page.setPrerenderingAllowed',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
 @event_class('Page.domContentEventFired')
 @dataclass
 class DomContentEventFired:
@@ -2841,7 +2878,7 @@ class FileChooserOpened:
     frame_id: FrameId
     #: Input mode.
     mode: str
-    #: Input node id. Only present for file choosers opened via an <input type="file"> element.
+    #: Input node id. Only present for file choosers opened via an ``<input type="file">`` element.
     backend_node_id: typing.Optional[dom.BackendNodeId]
 
     @classmethod

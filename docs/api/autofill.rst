@@ -1,11 +1,11 @@
-FedCm
-=====
+Autofill
+========
 
-This domain allows interacting with the FedCM dialog.
+Defines commands and events for Autofill.
 
 *This CDP domain is experimental.*
 
-.. module:: cdp.fed_cm
+.. module:: cdp.autofill
 
 * Types_
 * Commands_
@@ -19,17 +19,17 @@ yourself. Instead, the API creates objects for you as return
 values from commands, and then you can use those objects as
 arguments to other commands.
 
-.. autoclass:: LoginState
+.. autoclass:: CreditCard
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
 
-.. autoclass:: DialogType
+.. autoclass:: AddressField
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
 
-.. autoclass:: Account
+.. autoclass:: Address
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
@@ -46,24 +46,11 @@ commands, and ``z`` is the return type you should pay attention
 to. For more information, see
 :ref:`Getting Started: Commands <getting-started-commands>`.
 
-.. autofunction:: disable
+.. autofunction:: set_addresses
 
-.. autofunction:: dismiss_dialog
-
-.. autofunction:: enable
-
-.. autofunction:: reset_cooldown
-
-.. autofunction:: select_account
+.. autofunction:: trigger
 
 Events
 ------
 
-Generally, you do not need to instantiate CDP events
-yourself. Instead, the API creates events for you and then
-you use the event's attributes.
-
-.. autoclass:: DialogShown
-      :members:
-      :undoc-members:
-      :exclude-members: from_json, to_json
+*There are no events in this module.*

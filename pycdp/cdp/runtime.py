@@ -28,16 +28,54 @@ class ScriptId(str):
 
 
 @dataclass
-class WebDriverValue:
+class SerializationOptions:
     '''
-    Represents the value serialiazed by the WebDriver BiDi specification
-    https://w3c.github.io/webdriver-bidi.
+    Represents options for serialization. Overrides ``generatePreview``, ``returnByValue`` and
+    ``generateWebDriverValue``.
+    '''
+    serialization: str
+
+    #: Deep serialization depth. Default is full depth. Respected only in ``deep`` serialization mode.
+    max_depth: typing.Optional[int] = None
+
+    #: Embedder-specific parameters. For example if connected to V8 in Chrome these control DOM
+    #: serialization via ``maxNodeDepth: integer`` and ``includeShadowTree: "none" `` "open" `` "all"``.
+    #: Values can be only of type string or integer.
+    additional_parameters: typing.Optional[dict] = None
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['serialization'] = self.serialization
+        if self.max_depth is not None:
+            json['maxDepth'] = self.max_depth
+        if self.additional_parameters is not None:
+            json['additionalParameters'] = self.additional_parameters
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> SerializationOptions:
+        return cls(
+            serialization=str(json['serialization']),
+            max_depth=int(json['maxDepth']) if json.get('maxDepth', None) is not None else None,
+            additional_parameters=dict(json['additionalParameters']) if json.get('additionalParameters', None) is not None else None,
+        )
+
+
+@dataclass
+class DeepSerializedValue:
+    '''
+    Represents deep serialized value.
     '''
     type_: str
 
     value: typing.Optional[typing.Any] = None
 
     object_id: typing.Optional[str] = None
+
+    #: Set if value reference met more then once during serialization. In such
+    #: case, value is provided only to one of the serialized values. Unique
+    #: per value in the scope of one CDP call.
+    weak_local_object_reference: typing.Optional[int] = None
 
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
@@ -46,14 +84,17 @@ class WebDriverValue:
             json['value'] = self.value
         if self.object_id is not None:
             json['objectId'] = self.object_id
+        if self.weak_local_object_reference is not None:
+            json['weakLocalObjectReference'] = self.weak_local_object_reference
         return json
 
     @classmethod
-    def from_json(cls, json: T_JSON_DICT) -> WebDriverValue:
+    def from_json(cls, json: T_JSON_DICT) -> DeepSerializedValue:
         return cls(
             type_=str(json['type']),
             value=json['value'] if json.get('value', None) is not None else None,
             object_id=str(json['objectId']) if json.get('objectId', None) is not None else None,
+            weak_local_object_reference=int(json['weakLocalObjectReference']) if json.get('weakLocalObjectReference', None) is not None else None,
         )
 
 
@@ -114,8 +155,11 @@ class RemoteObject:
     #: String representation of the object.
     description: typing.Optional[str] = None
 
-    #: WebDriver BiDi representation of the value.
-    web_driver_value: typing.Optional[WebDriverValue] = None
+    #: Deprecated. Use ``deepSerializedValue`` instead. WebDriver BiDi representation of the value.
+    web_driver_value: typing.Optional[DeepSerializedValue] = None
+
+    #: Deep serialized value.
+    deep_serialized_value: typing.Optional[DeepSerializedValue] = None
 
     #: Unique object identifier (for non-primitive values).
     object_id: typing.Optional[RemoteObjectId] = None
@@ -140,6 +184,8 @@ class RemoteObject:
             json['description'] = self.description
         if self.web_driver_value is not None:
             json['webDriverValue'] = self.web_driver_value.to_json()
+        if self.deep_serialized_value is not None:
+            json['deepSerializedValue'] = self.deep_serialized_value.to_json()
         if self.object_id is not None:
             json['objectId'] = self.object_id.to_json()
         if self.preview is not None:
@@ -157,7 +203,8 @@ class RemoteObject:
             value=json['value'] if json.get('value', None) is not None else None,
             unserializable_value=UnserializableValue.from_json(json['unserializableValue']) if json.get('unserializableValue', None) is not None else None,
             description=str(json['description']) if json.get('description', None) is not None else None,
-            web_driver_value=WebDriverValue.from_json(json['webDriverValue']) if json.get('webDriverValue', None) is not None else None,
+            web_driver_value=DeepSerializedValue.from_json(json['webDriverValue']) if json.get('webDriverValue', None) is not None else None,
+            deep_serialized_value=DeepSerializedValue.from_json(json['deepSerializedValue']) if json.get('deepSerializedValue', None) is not None else None,
             object_id=RemoteObjectId.from_json(json['objectId']) if json.get('objectId', None) is not None else None,
             preview=ObjectPreview.from_json(json['preview']) if json.get('preview', None) is not None else None,
             custom_preview=CustomPreview.from_json(json['customPreview']) if json.get('customPreview', None) is not None else None,
@@ -512,7 +559,7 @@ class ExecutionContextDescription:
     #: performs a cross-process navigation.
     unique_id: str
 
-    #: Embedder-specific auxiliary data.
+    #: Embedder-specific auxiliary data likely matching {isDefault: boolean, type: 'default'``'isolated'``'worker', frameId: string}
     aux_data: typing.Optional[dict] = None
 
     def to_json(self) -> T_JSON_DICT:
@@ -805,7 +852,8 @@ def call_function_on(
         object_group: typing.Optional[str] = None,
         throw_on_side_effect: typing.Optional[bool] = None,
         unique_context_id: typing.Optional[str] = None,
-        generate_web_driver_value: typing.Optional[bool] = None
+        generate_web_driver_value: typing.Optional[bool] = None,
+        serialization_options: typing.Optional[SerializationOptions] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.Tuple[RemoteObject, typing.Optional[ExceptionDetails]]]:
     '''
     Calls function with given declaration on the given object. Object group of the result is
@@ -815,7 +863,7 @@ def call_function_on(
     :param object_id: *(Optional)* Identifier of the object to call function on. Either objectId or executionContextId should be specified.
     :param arguments: *(Optional)* Call arguments. All call arguments must belong to the same JavaScript world as the target object.
     :param silent: *(Optional)* In silent mode exceptions thrown during evaluation are not reported and do not pause execution. Overrides ```setPauseOnException```` state.
-    :param return_by_value: *(Optional)* Whether the result is expected to be a JSON object which should be sent by value.
+    :param return_by_value: *(Optional)* Whether the result is expected to be a JSON object which should be sent by value. Can be overriden by ````serializationOptions````.
     :param generate_preview: **(EXPERIMENTAL)** *(Optional)* Whether preview should be generated for the result.
     :param user_gesture: *(Optional)* Whether execution should be treated as initiated by user in the UI.
     :param await_promise: *(Optional)* Whether execution should ````await```` for resulting value and return once awaited promise is resolved.
@@ -823,7 +871,8 @@ def call_function_on(
     :param object_group: *(Optional)* Symbolic group name that can be used to release multiple objects. If objectGroup is not specified and objectId is, objectGroup will be inherited from object.
     :param throw_on_side_effect: **(EXPERIMENTAL)** *(Optional)* Whether to throw an exception if side effect cannot be ruled out during evaluation.
     :param unique_context_id: **(EXPERIMENTAL)** *(Optional)* An alternative way to specify the execution context to call function on. Compared to contextId that may be reused across processes, this is guaranteed to be system-unique, so it can be used to prevent accidental function call in context different than intended (e.g. as a result of navigation across process boundaries). This is mutually exclusive with ````executionContextId````.
-    :param generate_web_driver_value: **(EXPERIMENTAL)** *(Optional)* Whether the result should contain ````webDriverValue````, serialized according to https://w3c.github.io/webdriver-bidi. This is mutually exclusive with ````returnByValue````, but resulting ````objectId``` is still provided.
+    :param generate_web_driver_value: **(DEPRECATED)** *(Optional)* Deprecated. Use ````serializationOptions: {serialization:"deep"}```` instead. Whether the result should contain ````webDriverValue````, serialized according to https://w3c.github.io/webdriver-bidi. This is mutually exclusive with ````returnByValue````, but resulting ````objectId```` is still provided.
+    :param serialization_options: **(EXPERIMENTAL)** *(Optional)* Specifies the result serialization. If provided, overrides ````generatePreview````, ````returnByValue```` and ````generateWebDriverValue```.
     :returns: A tuple with the following items:
 
         0. **result** - Call result.
@@ -855,6 +904,8 @@ def call_function_on(
         params['uniqueContextId'] = unique_context_id
     if generate_web_driver_value is not None:
         params['generateWebDriverValue'] = generate_web_driver_value
+    if serialization_options is not None:
+        params['serializationOptions'] = serialization_options.to_json()
     cmd_dict: T_JSON_DICT = {
         'method': 'Runtime.callFunctionOn',
         'params': params,
@@ -949,7 +1000,8 @@ def evaluate(
         repl_mode: typing.Optional[bool] = None,
         allow_unsafe_eval_blocked_by_csp: typing.Optional[bool] = None,
         unique_context_id: typing.Optional[str] = None,
-        generate_web_driver_value: typing.Optional[bool] = None
+        generate_web_driver_value: typing.Optional[bool] = None,
+        serialization_options: typing.Optional[SerializationOptions] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.Tuple[RemoteObject, typing.Optional[ExceptionDetails]]]:
     '''
     Evaluates expression on global object.
@@ -968,8 +1020,9 @@ def evaluate(
     :param disable_breaks: **(EXPERIMENTAL)** *(Optional)* Disable breakpoints during execution.
     :param repl_mode: **(EXPERIMENTAL)** *(Optional)* Setting this flag to true enables ````let```` re-declaration and top-level ````await````. Note that ````let```` variables can only be re-declared if they originate from ````replMode```` themselves.
     :param allow_unsafe_eval_blocked_by_csp: **(EXPERIMENTAL)** *(Optional)* The Content Security Policy (CSP) for the target might block 'unsafe-eval' which includes eval(), Function(), setTimeout() and setInterval() when called with non-callable arguments. This flag bypasses CSP for this evaluation and allows unsafe-eval. Defaults to true.
-    :param unique_context_id: **(EXPERIMENTAL)** *(Optional)* An alternative way to specify the execution context to evaluate in. Compared to contextId that may be reused across processes, this is guaranteed to be system-unique, so it can be used to prevent accidental evaluation of the expression in context different than intended (e.g. as a result of navigation across process boundaries). This is mutually exclusive with ````contextId```.
-    :param generate_web_driver_value: **(EXPERIMENTAL)** *(Optional)* Whether the result should be serialized according to https://w3c.github.io/webdriver-bidi.
+    :param unique_context_id: **(EXPERIMENTAL)** *(Optional)* An alternative way to specify the execution context to evaluate in. Compared to contextId that may be reused across processes, this is guaranteed to be system-unique, so it can be used to prevent accidental evaluation of the expression in context different than intended (e.g. as a result of navigation across process boundaries). This is mutually exclusive with ````contextId````.
+    :param generate_web_driver_value: **(DEPRECATED)** *(Optional)* Deprecated. Use ````serializationOptions: {serialization:"deep"}```` instead. Whether the result should contain ````webDriverValue````, serialized according to https://w3c.github.io/webdriver-bidi. This is mutually exclusive with ````returnByValue````, but resulting ````objectId```` is still provided.
+    :param serialization_options: **(EXPERIMENTAL)** *(Optional)* Specifies the result serialization. If provided, overrides ````generatePreview````, ````returnByValue```` and ````generateWebDriverValue```.
     :returns: A tuple with the following items:
 
         0. **result** - Evaluation result.
@@ -1007,6 +1060,8 @@ def evaluate(
         params['uniqueContextId'] = unique_context_id
     if generate_web_driver_value is not None:
         params['generateWebDriverValue'] = generate_web_driver_value
+    if serialization_options is not None:
+        params['serializationOptions'] = serialization_options.to_json()
     cmd_dict: T_JSON_DICT = {
         'method': 'Runtime.evaluate',
         'params': params,

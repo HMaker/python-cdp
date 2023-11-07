@@ -459,6 +459,16 @@ def dispatch_touch_event(
     json = yield cmd_dict
 
 
+def cancel_dragging() -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Cancels any active dragging in the page.
+    '''
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Input.cancelDragging',
+    }
+    json = yield cmd_dict
+
+
 def emulate_touch_from_mouse_event(
         type_: str,
         x: int,

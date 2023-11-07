@@ -87,7 +87,52 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: StorageBucket
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: StorageBucketInfo
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingSourceType
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: UnsignedInt64AsBase10
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: UnsignedInt128AsBase16
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: SignedInt64AsBase10
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingFilterDataEntry
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingAggregationKeysEntry
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingSourceRegistration
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingSourceRegistrationResult
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
@@ -135,6 +180,12 @@ to. For more information, see
 .. autofunction:: override_quota_for_origin
 
 .. autofunction:: reset_shared_storage_budget
+
+.. autofunction:: run_bounce_tracking_mitigations
+
+.. autofunction:: set_attribution_reporting_local_testing_mode
+
+.. autofunction:: set_attribution_reporting_tracking
 
 .. autofunction:: set_cookies
 
@@ -205,6 +256,11 @@ you use the event's attributes.
       :exclude-members: from_json, to_json
 
 .. autoclass:: StorageBucketDeleted
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingSourceRegistered
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
