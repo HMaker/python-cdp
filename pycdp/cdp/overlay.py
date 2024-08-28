@@ -22,7 +22,7 @@ class SourceOrderConfig:
     '''
     Configuration data for drawing the source order of an elements children.
     '''
-    #: the color to outline the givent element in.
+    #: the color to outline the given element in.
     parent_outline_color: dom.RGBA
 
     #: the color to outline the child elements in.
@@ -621,6 +621,36 @@ class HingeConfig:
 
 
 @dataclass
+class WindowControlsOverlayConfig:
+    '''
+    Configuration for Window Controls Overlay
+    '''
+    #: Whether the title bar CSS should be shown when emulating the Window Controls Overlay.
+    show_css: bool
+
+    #: Selected platforms to show the overlay.
+    selected_platform: str
+
+    #: The theme color defined in app manifest.
+    theme_color: str
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['showCSS'] = self.show_css
+        json['selectedPlatform'] = self.selected_platform
+        json['themeColor'] = self.theme_color
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> WindowControlsOverlayConfig:
+        return cls(
+            show_css=bool(json['showCSS']),
+            selected_platform=str(json['selectedPlatform']),
+            theme_color=str(json['themeColor']),
+        )
+
+
+@dataclass
 class ContainerQueryHighlightConfig:
     #: A descriptor for the highlight appearance of container query containers.
     container_query_container_highlight_config: ContainerQueryContainerHighlightConfig
@@ -844,8 +874,8 @@ def highlight_frame(
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
     '''
     Highlights owner element of the frame with given id.
-    Deprecated: Doesn't work reliablity and cannot be fixed due to process
-    separatation (the owner node might be in a different process). Determine
+    Deprecated: Doesn't work reliably and cannot be fixed due to process
+    separation (the owner node might be in a different process). Determine
     the owner node in the client and use highlightNode.
 
     .. deprecated:: 1.3
@@ -1276,6 +1306,24 @@ def set_show_isolated_elements(
     params['isolatedElementHighlightConfigs'] = [i.to_json() for i in isolated_element_highlight_configs]
     cmd_dict: T_JSON_DICT = {
         'method': 'Overlay.setShowIsolatedElements',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def set_show_window_controls_overlay(
+        window_controls_overlay_config: typing.Optional[WindowControlsOverlayConfig] = None
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Show Window Controls Overlay for PWA
+
+    :param window_controls_overlay_config: *(Optional)* Window Controls Overlay data, null means hide Window Controls Overlay
+    '''
+    params: T_JSON_DICT = dict()
+    if window_controls_overlay_config is not None:
+        params['windowControlsOverlayConfig'] = window_controls_overlay_config.to_json()
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Overlay.setShowWindowControlsOverlay',
         'params': params,
     }
     json = yield cmd_dict

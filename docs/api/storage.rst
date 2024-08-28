@@ -37,17 +37,22 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: InterestGroupAuctionId
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: InterestGroupAccessType
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
 
-.. autoclass:: InterestGroupAd
+.. autoclass:: InterestGroupAuctionEventType
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
 
-.. autoclass:: InterestGroupDetails
+.. autoclass:: InterestGroupAuctionFetchType
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
@@ -122,7 +127,42 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: AttributionReportingFilterConfig
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingFilterPair
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: AttributionReportingAggregationKeysEntry
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingEventReportWindows
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingTriggerSpec
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingTriggerDataMatching
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingAggregatableDebugReportingData
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingAggregatableDebugReportingConfig
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
@@ -133,6 +173,56 @@ arguments to other commands.
       :exclude-members: from_json, to_json
 
 .. autoclass:: AttributionReportingSourceRegistrationResult
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingSourceRegistrationTimeConfig
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingAggregatableValueDictEntry
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingAggregatableValueEntry
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingEventTriggerData
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingAggregatableTriggerData
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingAggregatableDedupKey
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingTriggerRegistration
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingEventLevelResult
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingAggregatableResult
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: RelatedWebsiteSet
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
@@ -167,6 +257,8 @@ to. For more information, see
 
 .. autofunction:: get_interest_group_details
 
+.. autofunction:: get_related_website_sets
+
 .. autofunction:: get_shared_storage_entries
 
 .. autofunction:: get_shared_storage_metadata
@@ -183,11 +275,15 @@ to. For more information, see
 
 .. autofunction:: run_bounce_tracking_mitigations
 
+.. autofunction:: send_pending_attribution_reports
+
 .. autofunction:: set_attribution_reporting_local_testing_mode
 
 .. autofunction:: set_attribution_reporting_tracking
 
 .. autofunction:: set_cookies
+
+.. autofunction:: set_interest_group_auction_tracking
 
 .. autofunction:: set_interest_group_tracking
 
@@ -245,6 +341,16 @@ you use the event's attributes.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: InterestGroupAuctionEventOccurred
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: InterestGroupAuctionNetworkRequestCreated
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: SharedStorageAccessed
       :members:
       :undoc-members:
@@ -261,6 +367,11 @@ you use the event's attributes.
       :exclude-members: from_json, to_json
 
 .. autoclass:: AttributionReportingSourceRegistered
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AttributionReportingTriggerRegistered
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json

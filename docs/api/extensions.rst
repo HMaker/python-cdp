@@ -1,13 +1,11 @@
-EventBreakpoints
-================
+Extensions
+==========
 
-EventBreakpoints permits setting JavaScript breakpoints on operations and events
-occurring in native code invoked from JavaScript. Once breakpoint is hit, it is
-reported through Debugger domain, similarly to regular breakpoints being hit.
+Defines commands and events for browser extensions.
 
 *This CDP domain is experimental.*
 
-.. module:: cdp.event_breakpoints
+.. module:: cdp.extensions
 
 * Types_
 * Commands_
@@ -16,7 +14,15 @@ reported through Debugger domain, similarly to regular breakpoints being hit.
 Types
 -----
 
-*There are no types in this module.*
+Generally, you do not need to instantiate CDP types
+yourself. Instead, the API creates objects for you as return
+values from commands, and then you can use those objects as
+arguments to other commands.
+
+.. autoclass:: StorageArea
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
 
 Commands
 --------
@@ -30,11 +36,9 @@ commands, and ``z`` is the return type you should pay attention
 to. For more information, see
 :ref:`Getting Started: Commands <getting-started-commands>`.
 
-.. autofunction:: disable
+.. autofunction:: get_storage_items
 
-.. autofunction:: remove_instrumentation_breakpoint
-
-.. autofunction:: set_instrumentation_breakpoint
+.. autofunction:: load_unpacked
 
 Events
 ------

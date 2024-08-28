@@ -1,11 +1,11 @@
-Autofill
-========
+PWA
+===
 
-Defines commands and events for Autofill.
+This domain allows interacting with the browser to control PWAs.
 
 *This CDP domain is experimental.*
 
-.. module:: cdp.autofill
+.. module:: cdp.pwa
 
 * Types_
 * Commands_
@@ -19,37 +19,17 @@ yourself. Instead, the API creates objects for you as return
 values from commands, and then you can use those objects as
 arguments to other commands.
 
-.. autoclass:: CreditCard
+.. autoclass:: FileHandlerAccept
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
 
-.. autoclass:: AddressField
+.. autoclass:: FileHandler
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
 
-.. autoclass:: AddressFields
-      :members:
-      :undoc-members:
-      :exclude-members: from_json, to_json
-
-.. autoclass:: Address
-      :members:
-      :undoc-members:
-      :exclude-members: from_json, to_json
-
-.. autoclass:: AddressUI
-      :members:
-      :undoc-members:
-      :exclude-members: from_json, to_json
-
-.. autoclass:: FillingStrategy
-      :members:
-      :undoc-members:
-      :exclude-members: from_json, to_json
-
-.. autoclass:: FilledField
+.. autoclass:: DisplayMode
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
@@ -66,22 +46,21 @@ commands, and ``z`` is the return type you should pay attention
 to. For more information, see
 :ref:`Getting Started: Commands <getting-started-commands>`.
 
-.. autofunction:: disable
+.. autofunction:: change_app_user_settings
 
-.. autofunction:: enable
+.. autofunction:: get_os_app_state
 
-.. autofunction:: set_addresses
+.. autofunction:: install
 
-.. autofunction:: trigger
+.. autofunction:: launch
+
+.. autofunction:: launch_files_in_app
+
+.. autofunction:: open_current_page_in_app
+
+.. autofunction:: uninstall
 
 Events
 ------
 
-Generally, you do not need to instantiate CDP events
-yourself. Instead, the API creates events for you and then
-you use the event's attributes.
-
-.. autoclass:: AddressFormFilled
-      :members:
-      :undoc-members:
-      :exclude-members: from_json, to_json
+*There are no events in this module.*

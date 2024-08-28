@@ -30,8 +30,7 @@ class ScriptId(str):
 @dataclass
 class SerializationOptions:
     '''
-    Represents options for serialization. Overrides ``generatePreview``, ``returnByValue`` and
-    ``generateWebDriverValue``.
+    Represents options for serialization. Overrides ``generatePreview`` and ``returnByValue``.
     '''
     serialization: str
 
@@ -155,9 +154,6 @@ class RemoteObject:
     #: String representation of the object.
     description: typing.Optional[str] = None
 
-    #: Deprecated. Use ``deepSerializedValue`` instead. WebDriver BiDi representation of the value.
-    web_driver_value: typing.Optional[DeepSerializedValue] = None
-
     #: Deep serialized value.
     deep_serialized_value: typing.Optional[DeepSerializedValue] = None
 
@@ -182,8 +178,6 @@ class RemoteObject:
             json['unserializableValue'] = self.unserializable_value.to_json()
         if self.description is not None:
             json['description'] = self.description
-        if self.web_driver_value is not None:
-            json['webDriverValue'] = self.web_driver_value.to_json()
         if self.deep_serialized_value is not None:
             json['deepSerializedValue'] = self.deep_serialized_value.to_json()
         if self.object_id is not None:
@@ -203,7 +197,6 @@ class RemoteObject:
             value=json['value'] if json.get('value', None) is not None else None,
             unserializable_value=UnserializableValue.from_json(json['unserializableValue']) if json.get('unserializableValue', None) is not None else None,
             description=str(json['description']) if json.get('description', None) is not None else None,
-            web_driver_value=DeepSerializedValue.from_json(json['webDriverValue']) if json.get('webDriverValue', None) is not None else None,
             deep_serialized_value=DeepSerializedValue.from_json(json['deepSerializedValue']) if json.get('deepSerializedValue', None) is not None else None,
             object_id=RemoteObjectId.from_json(json['objectId']) if json.get('objectId', None) is not None else None,
             preview=ObjectPreview.from_json(json['preview']) if json.get('preview', None) is not None else None,
@@ -852,7 +845,6 @@ def call_function_on(
         object_group: typing.Optional[str] = None,
         throw_on_side_effect: typing.Optional[bool] = None,
         unique_context_id: typing.Optional[str] = None,
-        generate_web_driver_value: typing.Optional[bool] = None,
         serialization_options: typing.Optional[SerializationOptions] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.Tuple[RemoteObject, typing.Optional[ExceptionDetails]]]:
     '''
@@ -871,8 +863,7 @@ def call_function_on(
     :param object_group: *(Optional)* Symbolic group name that can be used to release multiple objects. If objectGroup is not specified and objectId is, objectGroup will be inherited from object.
     :param throw_on_side_effect: **(EXPERIMENTAL)** *(Optional)* Whether to throw an exception if side effect cannot be ruled out during evaluation.
     :param unique_context_id: **(EXPERIMENTAL)** *(Optional)* An alternative way to specify the execution context to call function on. Compared to contextId that may be reused across processes, this is guaranteed to be system-unique, so it can be used to prevent accidental function call in context different than intended (e.g. as a result of navigation across process boundaries). This is mutually exclusive with ````executionContextId````.
-    :param generate_web_driver_value: **(DEPRECATED)** *(Optional)* Deprecated. Use ````serializationOptions: {serialization:"deep"}```` instead. Whether the result should contain ````webDriverValue````, serialized according to https://w3c.github.io/webdriver-bidi. This is mutually exclusive with ````returnByValue````, but resulting ````objectId```` is still provided.
-    :param serialization_options: **(EXPERIMENTAL)** *(Optional)* Specifies the result serialization. If provided, overrides ````generatePreview````, ````returnByValue```` and ````generateWebDriverValue```.
+    :param serialization_options: **(EXPERIMENTAL)** *(Optional)* Specifies the result serialization. If provided, overrides ````generatePreview```` and ````returnByValue```.
     :returns: A tuple with the following items:
 
         0. **result** - Call result.
@@ -902,8 +893,6 @@ def call_function_on(
         params['throwOnSideEffect'] = throw_on_side_effect
     if unique_context_id is not None:
         params['uniqueContextId'] = unique_context_id
-    if generate_web_driver_value is not None:
-        params['generateWebDriverValue'] = generate_web_driver_value
     if serialization_options is not None:
         params['serializationOptions'] = serialization_options.to_json()
     cmd_dict: T_JSON_DICT = {
@@ -1000,7 +989,6 @@ def evaluate(
         repl_mode: typing.Optional[bool] = None,
         allow_unsafe_eval_blocked_by_csp: typing.Optional[bool] = None,
         unique_context_id: typing.Optional[str] = None,
-        generate_web_driver_value: typing.Optional[bool] = None,
         serialization_options: typing.Optional[SerializationOptions] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.Tuple[RemoteObject, typing.Optional[ExceptionDetails]]]:
     '''
@@ -1021,8 +1009,7 @@ def evaluate(
     :param repl_mode: **(EXPERIMENTAL)** *(Optional)* Setting this flag to true enables ````let```` re-declaration and top-level ````await````. Note that ````let```` variables can only be re-declared if they originate from ````replMode```` themselves.
     :param allow_unsafe_eval_blocked_by_csp: **(EXPERIMENTAL)** *(Optional)* The Content Security Policy (CSP) for the target might block 'unsafe-eval' which includes eval(), Function(), setTimeout() and setInterval() when called with non-callable arguments. This flag bypasses CSP for this evaluation and allows unsafe-eval. Defaults to true.
     :param unique_context_id: **(EXPERIMENTAL)** *(Optional)* An alternative way to specify the execution context to evaluate in. Compared to contextId that may be reused across processes, this is guaranteed to be system-unique, so it can be used to prevent accidental evaluation of the expression in context different than intended (e.g. as a result of navigation across process boundaries). This is mutually exclusive with ````contextId````.
-    :param generate_web_driver_value: **(DEPRECATED)** *(Optional)* Deprecated. Use ````serializationOptions: {serialization:"deep"}```` instead. Whether the result should contain ````webDriverValue````, serialized according to https://w3c.github.io/webdriver-bidi. This is mutually exclusive with ````returnByValue````, but resulting ````objectId```` is still provided.
-    :param serialization_options: **(EXPERIMENTAL)** *(Optional)* Specifies the result serialization. If provided, overrides ````generatePreview````, ````returnByValue```` and ````generateWebDriverValue```.
+    :param serialization_options: **(EXPERIMENTAL)** *(Optional)* Specifies the result serialization. If provided, overrides ````generatePreview```` and ````returnByValue```.
     :returns: A tuple with the following items:
 
         0. **result** - Evaluation result.
@@ -1058,8 +1045,6 @@ def evaluate(
         params['allowUnsafeEvalBlockedByCSP'] = allow_unsafe_eval_blocked_by_csp
     if unique_context_id is not None:
         params['uniqueContextId'] = unique_context_id
-    if generate_web_driver_value is not None:
-        params['generateWebDriverValue'] = generate_web_driver_value
     if serialization_options is not None:
         params['serializationOptions'] = serialization_options.to_json()
     cmd_dict: T_JSON_DICT = {
@@ -1375,11 +1360,9 @@ def add_binding(
     in case of any other input, function throws an exception.
     Each binding function call produces Runtime.bindingCalled notification.
 
-    **EXPERIMENTAL**
-
     :param name:
-    :param execution_context_id: **(DEPRECATED)** *(Optional)* If specified, the binding would only be exposed to the specified execution context. If omitted and ```executionContextName```` is not set, the binding is exposed to all execution contexts of the target. This parameter is mutually exclusive with ````executionContextName````. Deprecated in favor of ````executionContextName```` due to an unclear use case and bugs in implementation (crbug.com/1169639). ````executionContextId```` will be removed in the future.
-    :param execution_context_name: **(EXPERIMENTAL)** *(Optional)* If specified, the binding is exposed to the executionContext with matching name, even for contexts created after the binding is added. See also ````ExecutionContext.name```` and ````worldName```` parameter to ````Page.addScriptToEvaluateOnNewDocument````. This parameter is mutually exclusive with ````executionContextId```.
+    :param execution_context_id: **(DEPRECATED)** **(EXPERIMENTAL)** *(Optional)* If specified, the binding would only be exposed to the specified execution context. If omitted and ```executionContextName```` is not set, the binding is exposed to all execution contexts of the target. This parameter is mutually exclusive with ````executionContextName````. Deprecated in favor of ````executionContextName```` due to an unclear use case and bugs in implementation (crbug.com/1169639). ````executionContextId```` will be removed in the future.
+    :param execution_context_name: *(Optional)* If specified, the binding is exposed to the executionContext with matching name, even for contexts created after the binding is added. See also ````ExecutionContext.name```` and ````worldName```` parameter to ````Page.addScriptToEvaluateOnNewDocument````. This parameter is mutually exclusive with ````executionContextId```.
     '''
     params: T_JSON_DICT = dict()
     params['name'] = name
@@ -1400,8 +1383,6 @@ def remove_binding(
     '''
     This method does not remove binding function from global object but
     unsubscribes current runtime agent from Runtime.bindingCalled notifications.
-
-    **EXPERIMENTAL**
 
     :param name:
     '''
