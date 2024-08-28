@@ -30,16 +30,49 @@ class LoginState(enum.Enum):
 
 class DialogType(enum.Enum):
     '''
-    Whether the dialog shown is an account chooser or an auto re-authentication dialog.
+    The types of FedCM dialogs.
     '''
     ACCOUNT_CHOOSER = "AccountChooser"
     AUTO_REAUTHN = "AutoReauthn"
+    CONFIRM_IDP_LOGIN = "ConfirmIdpLogin"
+    ERROR = "Error"
 
     def to_json(self) -> str:
         return self.value
 
     @classmethod
     def from_json(cls, json: str) -> DialogType:
+        return cls(json)
+
+
+class DialogButton(enum.Enum):
+    '''
+    The buttons on the FedCM dialog.
+    '''
+    CONFIRM_IDP_LOGIN_CONTINUE = "ConfirmIdpLoginContinue"
+    ERROR_GOT_IT = "ErrorGotIt"
+    ERROR_MORE_DETAILS = "ErrorMoreDetails"
+
+    def to_json(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_json(cls, json: str) -> DialogButton:
+        return cls(json)
+
+
+class AccountUrlType(enum.Enum):
+    '''
+    The URLs that each account has
+    '''
+    TERMS_OF_SERVICE = "TermsOfService"
+    PRIVACY_POLICY = "PrivacyPolicy"
+
+    def to_json(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_json(cls, json: str) -> AccountUrlType:
         return cls(json)
 
 
@@ -60,7 +93,7 @@ class Account:
 
     idp_config_url: str
 
-    idp_signin_url: str
+    idp_login_url: str
 
     login_state: LoginState
 
@@ -77,7 +110,7 @@ class Account:
         json['givenName'] = self.given_name
         json['pictureUrl'] = self.picture_url
         json['idpConfigUrl'] = self.idp_config_url
-        json['idpSigninUrl'] = self.idp_signin_url
+        json['idpLoginUrl'] = self.idp_login_url
         json['loginState'] = self.login_state.to_json()
         if self.terms_of_service_url is not None:
             json['termsOfServiceUrl'] = self.terms_of_service_url
@@ -94,7 +127,7 @@ class Account:
             given_name=str(json['givenName']),
             picture_url=str(json['pictureUrl']),
             idp_config_url=str(json['idpConfigUrl']),
-            idp_signin_url=str(json['idpSigninUrl']),
+            idp_login_url=str(json['idpLoginUrl']),
             login_state=LoginState.from_json(json['loginState']),
             terms_of_service_url=str(json['termsOfServiceUrl']) if json.get('termsOfServiceUrl', None) is not None else None,
             privacy_policy_url=str(json['privacyPolicyUrl']) if json.get('privacyPolicyUrl', None) is not None else None,
@@ -138,6 +171,45 @@ def select_account(
     params['accountIndex'] = account_index
     cmd_dict: T_JSON_DICT = {
         'method': 'FedCm.selectAccount',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def click_dialog_button(
+        dialog_id: str,
+        dialog_button: DialogButton
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    :param dialog_id:
+    :param dialog_button:
+    '''
+    params: T_JSON_DICT = dict()
+    params['dialogId'] = dialog_id
+    params['dialogButton'] = dialog_button.to_json()
+    cmd_dict: T_JSON_DICT = {
+        'method': 'FedCm.clickDialogButton',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def open_url(
+        dialog_id: str,
+        account_index: int,
+        account_url_type: AccountUrlType
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    :param dialog_id:
+    :param account_index:
+    :param account_url_type:
+    '''
+    params: T_JSON_DICT = dict()
+    params['dialogId'] = dialog_id
+    params['accountIndex'] = account_index
+    params['accountUrlType'] = account_url_type.to_json()
+    cmd_dict: T_JSON_DICT = {
+        'method': 'FedCm.openUrl',
         'params': params,
     }
     json = yield cmd_dict
@@ -192,4 +264,20 @@ class DialogShown:
             accounts=[Account.from_json(i) for i in json['accounts']],
             title=str(json['title']),
             subtitle=str(json['subtitle']) if json.get('subtitle', None) is not None else None
+        )
+
+
+@event_class('FedCm.dialogClosed')
+@dataclass
+class DialogClosed:
+    '''
+    Triggered when a dialog is closed, either by user action, JS abort,
+    or a command below.
+    '''
+    dialog_id: str
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> DialogClosed:
+        return cls(
+            dialog_id=str(json['dialogId'])
         )

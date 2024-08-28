@@ -57,7 +57,7 @@ class AddressField:
     #: address field name, for example GIVEN_NAME.
     name: str
 
-    #: address field name, for example Jon Doe.
+    #: address field value, for example Jon Doe.
     value: str
 
     def to_json(self) -> T_JSON_DICT:
@@ -75,8 +75,27 @@ class AddressField:
 
 
 @dataclass
+class AddressFields:
+    '''
+    A list of address fields.
+    '''
+    fields: typing.List[AddressField]
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['fields'] = [i.to_json() for i in self.fields]
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> AddressFields:
+        return cls(
+            fields=[AddressField.from_json(i) for i in json['fields']],
+        )
+
+
+@dataclass
 class Address:
-    #: fields and values defining a test address.
+    #: fields and values defining an address.
     fields: typing.List[AddressField]
 
     def to_json(self) -> T_JSON_DICT:
@@ -88,6 +107,99 @@ class Address:
     def from_json(cls, json: T_JSON_DICT) -> Address:
         return cls(
             fields=[AddressField.from_json(i) for i in json['fields']],
+        )
+
+
+@dataclass
+class AddressUI:
+    '''
+    Defines how an address can be displayed like in chrome://settings/addresses.
+    Address UI is a two dimensional array, each inner array is an "address information line", and when rendered in a UI surface should be displayed as such.
+    The following address UI for instance:
+    [[{name: "GIVE_NAME", value: "Jon"}, {name: "FAMILY_NAME", value: "Doe"}], [{name: "CITY", value: "Munich"}, {name: "ZIP", value: "81456"}]]
+    should allow the receiver to render:
+    Jon Doe
+    Munich 81456
+    '''
+    #: A two dimension array containing the representation of values from an address profile.
+    address_fields: typing.List[AddressFields]
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['addressFields'] = [i.to_json() for i in self.address_fields]
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> AddressUI:
+        return cls(
+            address_fields=[AddressFields.from_json(i) for i in json['addressFields']],
+        )
+
+
+class FillingStrategy(enum.Enum):
+    '''
+    Specified whether a filled field was done so by using the html autocomplete attribute or autofill heuristics.
+    '''
+    AUTOCOMPLETE_ATTRIBUTE = "autocompleteAttribute"
+    AUTOFILL_INFERRED = "autofillInferred"
+
+    def to_json(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_json(cls, json: str) -> FillingStrategy:
+        return cls(json)
+
+
+@dataclass
+class FilledField:
+    #: The type of the field, e.g text, password etc.
+    html_type: str
+
+    #: the html id
+    id_: str
+
+    #: the html name
+    name: str
+
+    #: the field value
+    value: str
+
+    #: The actual field type, e.g FAMILY_NAME
+    autofill_type: str
+
+    #: The filling strategy
+    filling_strategy: FillingStrategy
+
+    #: The frame the field belongs to
+    frame_id: page.FrameId
+
+    #: The form field's DOM node
+    field_id: dom.BackendNodeId
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['htmlType'] = self.html_type
+        json['id'] = self.id_
+        json['name'] = self.name
+        json['value'] = self.value
+        json['autofillType'] = self.autofill_type
+        json['fillingStrategy'] = self.filling_strategy.to_json()
+        json['frameId'] = self.frame_id.to_json()
+        json['fieldId'] = self.field_id.to_json()
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> FilledField:
+        return cls(
+            html_type=str(json['htmlType']),
+            id_=str(json['id']),
+            name=str(json['name']),
+            value=str(json['value']),
+            autofill_type=str(json['autofillType']),
+            filling_strategy=FillingStrategy.from_json(json['fillingStrategy']),
+            frame_id=page.FrameId.from_json(json['frameId']),
+            field_id=dom.BackendNodeId.from_json(json['fieldId']),
         )
 
 
@@ -131,3 +243,43 @@ def set_addresses(
         'params': params,
     }
     json = yield cmd_dict
+
+
+def disable() -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Disables autofill domain notifications.
+    '''
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Autofill.disable',
+    }
+    json = yield cmd_dict
+
+
+def enable() -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Enables autofill domain notifications.
+    '''
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Autofill.enable',
+    }
+    json = yield cmd_dict
+
+
+@event_class('Autofill.addressFormFilled')
+@dataclass
+class AddressFormFilled:
+    '''
+    Emitted when an address form is filled.
+    '''
+    #: Information about the fields that were filled
+    filled_fields: typing.List[FilledField]
+    #: An UI representation of the address used to fill the form.
+    #: Consists of a 2D array where each child represents an address/profile line.
+    address_ui: AddressUI
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> AddressFormFilled:
+        return cls(
+            filled_fields=[FilledField.from_json(i) for i in json['filledFields']],
+            address_ui=AddressUI.from_json(json['addressUi'])
+        )

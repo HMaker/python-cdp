@@ -109,6 +109,8 @@ class ServiceWorkerVersion:
 
     target_id: typing.Optional[target.TargetID] = None
 
+    router_rules: typing.Optional[str] = None
+
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
         json['versionId'] = self.version_id
@@ -124,6 +126,8 @@ class ServiceWorkerVersion:
             json['controlledClients'] = [i.to_json() for i in self.controlled_clients]
         if self.target_id is not None:
             json['targetId'] = self.target_id.to_json()
+        if self.router_rules is not None:
+            json['routerRules'] = self.router_rules
         return json
 
     @classmethod
@@ -138,6 +142,7 @@ class ServiceWorkerVersion:
             script_response_time=float(json['scriptResponseTime']) if json.get('scriptResponseTime', None) is not None else None,
             controlled_clients=[target.TargetID.from_json(i) for i in json['controlledClients']] if json.get('controlledClients', None) is not None else None,
             target_id=target.TargetID.from_json(json['targetId']) if json.get('targetId', None) is not None else None,
+            router_rules=str(json['routerRules']) if json.get('routerRules', None) is not None else None,
         )
 
 
