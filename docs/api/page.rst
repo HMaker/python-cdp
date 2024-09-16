@@ -222,6 +222,61 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: FileFilter
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: FileHandler
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: ImageResource
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: LaunchHandler
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: ProtocolHandler
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: RelatedApplication
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: ScopeExtension
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: Screenshot
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: ShareTarget
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: Shortcut
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: WebAppManifest
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: AutoResponseMode
       :members:
       :undoc-members:
@@ -238,6 +293,11 @@ arguments to other commands.
       :exclude-members: from_json, to_json
 
 .. autoclass:: BackForwardCacheNotRestoredReasonType
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: BackForwardCacheBlockingDetails
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
@@ -303,8 +363,6 @@ to. For more information, see
 .. autofunction:: get_app_id
 
 .. autofunction:: get_app_manifest
-
-.. autofunction:: get_cookies
 
 .. autofunction:: get_frame_tree
 
@@ -414,6 +472,11 @@ you use the event's attributes.
       :exclude-members: from_json, to_json
 
 .. autoclass:: FrameDetached
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: FrameSubtreeWillBeDetached
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json

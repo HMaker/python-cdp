@@ -98,6 +98,7 @@ class CookieExclusionReason(enum.Enum):
     EXCLUDE_SAME_PARTY_CROSS_PARTY_CONTEXT = "ExcludeSamePartyCrossPartyContext"
     EXCLUDE_DOMAIN_NON_ASCII = "ExcludeDomainNonASCII"
     EXCLUDE_THIRD_PARTY_COOKIE_BLOCKED_IN_FIRST_PARTY_SET = "ExcludeThirdPartyCookieBlockedInFirstPartySet"
+    EXCLUDE_THIRD_PARTY_PHASEOUT = "ExcludeThirdPartyPhaseout"
 
     def to_json(self) -> str:
         return self.value
@@ -119,6 +120,7 @@ class CookieWarningReason(enum.Enum):
     WARN_ATTRIBUTE_VALUE_EXCEEDS_MAX_SIZE = "WarnAttributeValueExceedsMaxSize"
     WARN_DOMAIN_NON_ASCII = "WarnDomainNonASCII"
     WARN_THIRD_PARTY_PHASEOUT = "WarnThirdPartyPhaseout"
+    WARN_CROSS_SITE_REDIRECT_DOWNGRADE_CHANGES_INCLUSION = "WarnCrossSiteRedirectDowngradeChangesInclusion"
 
     def to_json(self) -> str:
         return self.value
@@ -226,6 +228,7 @@ class MixedContentResourceType(enum.Enum):
     FRAME = "Frame"
     IMAGE = "Image"
     IMPORT = "Import"
+    JSON = "JSON"
     MANIFEST = "Manifest"
     PING = "Ping"
     PLUGIN_DATA = "PluginData"
@@ -235,6 +238,7 @@ class MixedContentResourceType(enum.Enum):
     SCRIPT = "Script"
     SERVICE_WORKER = "ServiceWorker"
     SHARED_WORKER = "SharedWorker"
+    SPECULATION_RULES = "SpeculationRules"
     STYLESHEET = "Stylesheet"
     TRACK = "Track"
     VIDEO = "Video"
@@ -308,6 +312,8 @@ class BlockedByResponseReason(enum.Enum):
     COOP_SANDBOXED_I_FRAME_CANNOT_NAVIGATE_TO_COOP_PAGE = "CoopSandboxedIFrameCannotNavigateToCoopPage"
     CORP_NOT_SAME_ORIGIN = "CorpNotSameOrigin"
     CORP_NOT_SAME_ORIGIN_AFTER_DEFAULTED_TO_SAME_ORIGIN_BY_COEP = "CorpNotSameOriginAfterDefaultedToSameOriginByCoep"
+    CORP_NOT_SAME_ORIGIN_AFTER_DEFAULTED_TO_SAME_ORIGIN_BY_DIP = "CorpNotSameOriginAfterDefaultedToSameOriginByDip"
+    CORP_NOT_SAME_ORIGIN_AFTER_DEFAULTED_TO_SAME_ORIGIN_BY_COEP_AND_DIP = "CorpNotSameOriginAfterDefaultedToSameOriginByCoepAndDip"
     CORP_NOT_SAME_SITE = "CorpNotSameSite"
 
     def to_json(self) -> str:
@@ -640,12 +646,51 @@ class AttributionReportingIssueType(enum.Enum):
     WEB_AND_OS_HEADERS = "WebAndOsHeaders"
     NO_WEB_OR_OS_SUPPORT = "NoWebOrOsSupport"
     NAVIGATION_REGISTRATION_WITHOUT_TRANSIENT_USER_ACTIVATION = "NavigationRegistrationWithoutTransientUserActivation"
+    INVALID_INFO_HEADER = "InvalidInfoHeader"
+    NO_REGISTER_SOURCE_HEADER = "NoRegisterSourceHeader"
+    NO_REGISTER_TRIGGER_HEADER = "NoRegisterTriggerHeader"
+    NO_REGISTER_OS_SOURCE_HEADER = "NoRegisterOsSourceHeader"
+    NO_REGISTER_OS_TRIGGER_HEADER = "NoRegisterOsTriggerHeader"
+    NAVIGATION_REGISTRATION_UNIQUE_SCOPE_ALREADY_SET = "NavigationRegistrationUniqueScopeAlreadySet"
 
     def to_json(self) -> str:
         return self.value
 
     @classmethod
     def from_json(cls, json: str) -> AttributionReportingIssueType:
+        return cls(json)
+
+
+class SharedDictionaryError(enum.Enum):
+    USE_ERROR_CROSS_ORIGIN_NO_CORS_REQUEST = "UseErrorCrossOriginNoCorsRequest"
+    USE_ERROR_DICTIONARY_LOAD_FAILURE = "UseErrorDictionaryLoadFailure"
+    USE_ERROR_MATCHING_DICTIONARY_NOT_USED = "UseErrorMatchingDictionaryNotUsed"
+    USE_ERROR_UNEXPECTED_CONTENT_DICTIONARY_HEADER = "UseErrorUnexpectedContentDictionaryHeader"
+    WRITE_ERROR_COSS_ORIGIN_NO_CORS_REQUEST = "WriteErrorCossOriginNoCorsRequest"
+    WRITE_ERROR_DISALLOWED_BY_SETTINGS = "WriteErrorDisallowedBySettings"
+    WRITE_ERROR_EXPIRED_RESPONSE = "WriteErrorExpiredResponse"
+    WRITE_ERROR_FEATURE_DISABLED = "WriteErrorFeatureDisabled"
+    WRITE_ERROR_INSUFFICIENT_RESOURCES = "WriteErrorInsufficientResources"
+    WRITE_ERROR_INVALID_MATCH_FIELD = "WriteErrorInvalidMatchField"
+    WRITE_ERROR_INVALID_STRUCTURED_HEADER = "WriteErrorInvalidStructuredHeader"
+    WRITE_ERROR_NAVIGATION_REQUEST = "WriteErrorNavigationRequest"
+    WRITE_ERROR_NO_MATCH_FIELD = "WriteErrorNoMatchField"
+    WRITE_ERROR_NON_LIST_MATCH_DEST_FIELD = "WriteErrorNonListMatchDestField"
+    WRITE_ERROR_NON_SECURE_CONTEXT = "WriteErrorNonSecureContext"
+    WRITE_ERROR_NON_STRING_ID_FIELD = "WriteErrorNonStringIdField"
+    WRITE_ERROR_NON_STRING_IN_MATCH_DEST_LIST = "WriteErrorNonStringInMatchDestList"
+    WRITE_ERROR_NON_STRING_MATCH_FIELD = "WriteErrorNonStringMatchField"
+    WRITE_ERROR_NON_TOKEN_TYPE_FIELD = "WriteErrorNonTokenTypeField"
+    WRITE_ERROR_REQUEST_ABORTED = "WriteErrorRequestAborted"
+    WRITE_ERROR_SHUTTING_DOWN = "WriteErrorShuttingDown"
+    WRITE_ERROR_TOO_LONG_ID_FIELD = "WriteErrorTooLongIdField"
+    WRITE_ERROR_UNSUPPORTED_TYPE = "WriteErrorUnsupportedType"
+
+    def to_json(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_json(cls, json: str) -> SharedDictionaryError:
         return cls(json)
 
 
@@ -743,8 +788,27 @@ class NavigatorUserAgentIssueDetails:
         )
 
 
+@dataclass
+class SharedDictionaryIssueDetails:
+    shared_dictionary_error: SharedDictionaryError
+
+    request: AffectedRequest
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['sharedDictionaryError'] = self.shared_dictionary_error.to_json()
+        json['request'] = self.request.to_json()
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> SharedDictionaryIssueDetails:
+        return cls(
+            shared_dictionary_error=SharedDictionaryError.from_json(json['sharedDictionaryError']),
+            request=AffectedRequest.from_json(json['request']),
+        )
+
+
 class GenericIssueErrorType(enum.Enum):
-    CROSS_ORIGIN_PORTAL_POST_MESSAGE_ERROR = "CrossOriginPortalPostMessageError"
     FORM_LABEL_FOR_NAME_ERROR = "FormLabelForNameError"
     FORM_DUPLICATE_ID_FOR_INPUT_ERROR = "FormDuplicateIdForInputError"
     FORM_INPUT_WITH_NO_LABEL_ERROR = "FormInputWithNoLabelError"
@@ -858,6 +922,41 @@ class BounceTrackingIssueDetails:
         )
 
 
+@dataclass
+class CookieDeprecationMetadataIssueDetails:
+    '''
+    This issue warns about third-party sites that are accessing cookies on the
+    current page, and have been permitted due to having a global metadata grant.
+    Note that in this context 'site' means eTLD+1. For example, if the URL
+    ``https://example.test:80/web_page`` was accessing cookies, the site reported
+    would be ``example.test``.
+    '''
+    allowed_sites: typing.List[str]
+
+    opt_out_percentage: float
+
+    is_opt_out_top_level: bool
+
+    operation: CookieOperation
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['allowedSites'] = [i for i in self.allowed_sites]
+        json['optOutPercentage'] = self.opt_out_percentage
+        json['isOptOutTopLevel'] = self.is_opt_out_top_level
+        json['operation'] = self.operation.to_json()
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> CookieDeprecationMetadataIssueDetails:
+        return cls(
+            allowed_sites=[str(i) for i in json['allowedSites']],
+            opt_out_percentage=float(json['optOutPercentage']),
+            is_opt_out_top_level=bool(json['isOptOutTopLevel']),
+            operation=CookieOperation.from_json(json['operation']),
+        )
+
+
 class ClientHintIssueReason(enum.Enum):
     META_TAG_ALLOW_LIST_INVALID_ORIGIN = "MetaTagAllowListInvalidOrigin"
     META_TAG_MODIFIED_HTML = "MetaTagModifiedHTML"
@@ -910,7 +1009,9 @@ class FederatedAuthRequestIssueReason(enum.Enum):
     CLIENT_METADATA_NO_RESPONSE = "ClientMetadataNoResponse"
     CLIENT_METADATA_INVALID_RESPONSE = "ClientMetadataInvalidResponse"
     CLIENT_METADATA_INVALID_CONTENT_TYPE = "ClientMetadataInvalidContentType"
+    IDP_NOT_POTENTIALLY_TRUSTWORTHY = "IdpNotPotentiallyTrustworthy"
     DISABLED_IN_SETTINGS = "DisabledInSettings"
+    DISABLED_IN_FLAGS = "DisabledInFlags"
     ERROR_FETCHING_SIGNIN = "ErrorFetchingSignin"
     INVALID_SIGNIN_RESPONSE = "InvalidSigninResponse"
     ACCOUNTS_HTTP_NOT_FOUND = "AccountsHttpNotFound"
@@ -921,6 +1022,8 @@ class FederatedAuthRequestIssueReason(enum.Enum):
     ID_TOKEN_HTTP_NOT_FOUND = "IdTokenHttpNotFound"
     ID_TOKEN_NO_RESPONSE = "IdTokenNoResponse"
     ID_TOKEN_INVALID_RESPONSE = "IdTokenInvalidResponse"
+    ID_TOKEN_IDP_ERROR_RESPONSE = "IdTokenIdpErrorResponse"
+    ID_TOKEN_CROSS_SITE_IDP_ERROR_RESPONSE = "IdTokenCrossSiteIdpErrorResponse"
     ID_TOKEN_INVALID_REQUEST = "IdTokenInvalidRequest"
     ID_TOKEN_INVALID_CONTENT_TYPE = "IdTokenInvalidContentType"
     ERROR_ID_TOKEN = "ErrorIdToken"
@@ -928,6 +1031,12 @@ class FederatedAuthRequestIssueReason(enum.Enum):
     RP_PAGE_NOT_VISIBLE = "RpPageNotVisible"
     SILENT_MEDIATION_FAILURE = "SilentMediationFailure"
     THIRD_PARTY_COOKIES_BLOCKED = "ThirdPartyCookiesBlocked"
+    NOT_SIGNED_IN_WITH_IDP = "NotSignedInWithIdp"
+    MISSING_TRANSIENT_USER_ACTIVATION = "MissingTransientUserActivation"
+    REPLACED_BY_BUTTON_MODE = "ReplacedByButtonMode"
+    INVALID_FIELDS_SPECIFIED = "InvalidFieldsSpecified"
+    RELYING_PARTY_ORIGIN_IS_OPAQUE = "RelyingPartyOriginIsOpaque"
+    TYPE_NOT_MATCHING = "TypeNotMatching"
 
     def to_json(self) -> str:
         return self.value
@@ -1071,6 +1180,52 @@ class StylesheetLoadingIssueDetails:
         )
 
 
+class PropertyRuleIssueReason(enum.Enum):
+    INVALID_SYNTAX = "InvalidSyntax"
+    INVALID_INITIAL_VALUE = "InvalidInitialValue"
+    INVALID_INHERITS = "InvalidInherits"
+    INVALID_NAME = "InvalidName"
+
+    def to_json(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_json(cls, json: str) -> PropertyRuleIssueReason:
+        return cls(json)
+
+
+@dataclass
+class PropertyRuleIssueDetails:
+    '''
+    This issue warns about errors in property rules that lead to property
+    registrations being ignored.
+    '''
+    #: Source code position of the property rule.
+    source_code_location: SourceCodeLocation
+
+    #: Reason why the property rule was discarded.
+    property_rule_issue_reason: PropertyRuleIssueReason
+
+    #: The value of the property rule property that failed to parse
+    property_value: typing.Optional[str] = None
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['sourceCodeLocation'] = self.source_code_location.to_json()
+        json['propertyRuleIssueReason'] = self.property_rule_issue_reason.to_json()
+        if self.property_value is not None:
+            json['propertyValue'] = self.property_value
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> PropertyRuleIssueDetails:
+        return cls(
+            source_code_location=SourceCodeLocation.from_json(json['sourceCodeLocation']),
+            property_rule_issue_reason=PropertyRuleIssueReason.from_json(json['propertyRuleIssueReason']),
+            property_value=str(json['propertyValue']) if json.get('propertyValue', None) is not None else None,
+        )
+
+
 class InspectorIssueCode(enum.Enum):
     '''
     A unique identifier for the type of issue. Each type may use one of the
@@ -1093,8 +1248,11 @@ class InspectorIssueCode(enum.Enum):
     CLIENT_HINT_ISSUE = "ClientHintIssue"
     FEDERATED_AUTH_REQUEST_ISSUE = "FederatedAuthRequestIssue"
     BOUNCE_TRACKING_ISSUE = "BounceTrackingIssue"
+    COOKIE_DEPRECATION_METADATA_ISSUE = "CookieDeprecationMetadataIssue"
     STYLESHEET_LOADING_ISSUE = "StylesheetLoadingIssue"
     FEDERATED_AUTH_USER_INFO_REQUEST_ISSUE = "FederatedAuthUserInfoRequestIssue"
+    PROPERTY_RULE_ISSUE = "PropertyRuleIssue"
+    SHARED_DICTIONARY_ISSUE = "SharedDictionaryIssue"
 
     def to_json(self) -> str:
         return self.value
@@ -1143,9 +1301,15 @@ class InspectorIssueDetails:
 
     bounce_tracking_issue_details: typing.Optional[BounceTrackingIssueDetails] = None
 
+    cookie_deprecation_metadata_issue_details: typing.Optional[CookieDeprecationMetadataIssueDetails] = None
+
     stylesheet_loading_issue_details: typing.Optional[StylesheetLoadingIssueDetails] = None
 
+    property_rule_issue_details: typing.Optional[PropertyRuleIssueDetails] = None
+
     federated_auth_user_info_request_issue_details: typing.Optional[FederatedAuthUserInfoRequestIssueDetails] = None
+
+    shared_dictionary_issue_details: typing.Optional[SharedDictionaryIssueDetails] = None
 
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
@@ -1181,10 +1345,16 @@ class InspectorIssueDetails:
             json['federatedAuthRequestIssueDetails'] = self.federated_auth_request_issue_details.to_json()
         if self.bounce_tracking_issue_details is not None:
             json['bounceTrackingIssueDetails'] = self.bounce_tracking_issue_details.to_json()
+        if self.cookie_deprecation_metadata_issue_details is not None:
+            json['cookieDeprecationMetadataIssueDetails'] = self.cookie_deprecation_metadata_issue_details.to_json()
         if self.stylesheet_loading_issue_details is not None:
             json['stylesheetLoadingIssueDetails'] = self.stylesheet_loading_issue_details.to_json()
+        if self.property_rule_issue_details is not None:
+            json['propertyRuleIssueDetails'] = self.property_rule_issue_details.to_json()
         if self.federated_auth_user_info_request_issue_details is not None:
             json['federatedAuthUserInfoRequestIssueDetails'] = self.federated_auth_user_info_request_issue_details.to_json()
+        if self.shared_dictionary_issue_details is not None:
+            json['sharedDictionaryIssueDetails'] = self.shared_dictionary_issue_details.to_json()
         return json
 
     @classmethod
@@ -1206,8 +1376,11 @@ class InspectorIssueDetails:
             client_hint_issue_details=ClientHintIssueDetails.from_json(json['clientHintIssueDetails']) if json.get('clientHintIssueDetails', None) is not None else None,
             federated_auth_request_issue_details=FederatedAuthRequestIssueDetails.from_json(json['federatedAuthRequestIssueDetails']) if json.get('federatedAuthRequestIssueDetails', None) is not None else None,
             bounce_tracking_issue_details=BounceTrackingIssueDetails.from_json(json['bounceTrackingIssueDetails']) if json.get('bounceTrackingIssueDetails', None) is not None else None,
+            cookie_deprecation_metadata_issue_details=CookieDeprecationMetadataIssueDetails.from_json(json['cookieDeprecationMetadataIssueDetails']) if json.get('cookieDeprecationMetadataIssueDetails', None) is not None else None,
             stylesheet_loading_issue_details=StylesheetLoadingIssueDetails.from_json(json['stylesheetLoadingIssueDetails']) if json.get('stylesheetLoadingIssueDetails', None) is not None else None,
+            property_rule_issue_details=PropertyRuleIssueDetails.from_json(json['propertyRuleIssueDetails']) if json.get('propertyRuleIssueDetails', None) is not None else None,
             federated_auth_user_info_request_issue_details=FederatedAuthUserInfoRequestIssueDetails.from_json(json['federatedAuthUserInfoRequestIssueDetails']) if json.get('federatedAuthUserInfoRequestIssueDetails', None) is not None else None,
+            shared_dictionary_issue_details=SharedDictionaryIssueDetails.from_json(json['sharedDictionaryIssueDetails']) if json.get('sharedDictionaryIssueDetails', None) is not None else None,
         )
 
 

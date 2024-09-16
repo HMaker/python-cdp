@@ -174,12 +174,27 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
-.. autoclass:: CSSPositionFallbackRule
+.. autoclass:: CSSPositionTryRule
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
 
 .. autoclass:: CSSKeyframesRule
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: CSSPropertyRegistration
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: CSSFontPaletteValuesRule
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: CSSPropertyRule
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
@@ -226,6 +241,8 @@ to. For more information, see
 
 .. autofunction:: get_layers_for_node
 
+.. autofunction:: get_location_for_selector
+
 .. autofunction:: get_matched_styles_for_node
 
 .. autofunction:: get_media_queries
@@ -243,6 +260,8 @@ to. For more information, see
 .. autofunction:: set_local_fonts_enabled
 
 .. autofunction:: set_media_text
+
+.. autofunction:: set_property_rule_property_name
 
 .. autofunction:: set_rule_selector
 

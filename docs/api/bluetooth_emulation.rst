@@ -1,11 +1,12 @@
-Autofill
-========
+BluetoothEmulation
+==================
 
-Defines commands and events for Autofill.
+This domain allows configuring virtual Bluetooth devices to test
+the web-bluetooth API.
 
 *This CDP domain is experimental.*
 
-.. module:: cdp.autofill
+.. module:: cdp.bluetooth_emulation
 
 * Types_
 * Commands_
@@ -19,37 +20,22 @@ yourself. Instead, the API creates objects for you as return
 values from commands, and then you can use those objects as
 arguments to other commands.
 
-.. autoclass:: CreditCard
+.. autoclass:: CentralState
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
 
-.. autoclass:: AddressField
+.. autoclass:: ManufacturerData
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
 
-.. autoclass:: AddressFields
+.. autoclass:: ScanRecord
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
 
-.. autoclass:: Address
-      :members:
-      :undoc-members:
-      :exclude-members: from_json, to_json
-
-.. autoclass:: AddressUI
-      :members:
-      :undoc-members:
-      :exclude-members: from_json, to_json
-
-.. autoclass:: FillingStrategy
-      :members:
-      :undoc-members:
-      :exclude-members: from_json, to_json
-
-.. autoclass:: FilledField
+.. autoclass:: ScanEntry
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
@@ -70,18 +56,11 @@ to. For more information, see
 
 .. autofunction:: enable
 
-.. autofunction:: set_addresses
+.. autofunction:: simulate_advertisement
 
-.. autofunction:: trigger
+.. autofunction:: simulate_preconnected_peripheral
 
 Events
 ------
 
-Generally, you do not need to instantiate CDP events
-yourself. Instead, the API creates events for you and then
-you use the event's attributes.
-
-.. autoclass:: AddressFormFilled
-      :members:
-      :undoc-members:
-      :exclude-members: from_json, to_json
+*There are no events in this module.*

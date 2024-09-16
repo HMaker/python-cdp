@@ -193,7 +193,7 @@ class PreloadingAttemptSource:
     that had a speculation rule that triggered the attempt, and the
     BackendNodeIds of <a href> or <area href> elements that triggered the
     attempt (in the case of attempts triggered by a document rule). It is
-    possible for mulitple rule sets and links to trigger a single attempt.
+    possible for multiple rule sets and links to trigger a single attempt.
     '''
     key: PreloadingAttemptKey
 
@@ -226,7 +226,6 @@ class PrerenderFinalStatus(enum.Enum):
     LOW_END_DEVICE = "LowEndDevice"
     INVALID_SCHEME_REDIRECT = "InvalidSchemeRedirect"
     INVALID_SCHEME_NAVIGATION = "InvalidSchemeNavigation"
-    IN_PROGRESS_NAVIGATION = "InProgressNavigation"
     NAVIGATION_REQUEST_BLOCKED_BY_CSP = "NavigationRequestBlockedByCsp"
     MAIN_FRAME_NAVIGATION = "MainFrameNavigation"
     MOJO_BINDER_POLICY = "MojoBinderPolicy"
@@ -238,7 +237,6 @@ class PrerenderFinalStatus(enum.Enum):
     NAVIGATION_BAD_HTTP_STATUS = "NavigationBadHttpStatus"
     CLIENT_CERT_REQUESTED = "ClientCertRequested"
     NAVIGATION_REQUEST_NETWORK_ERROR = "NavigationRequestNetworkError"
-    MAX_NUM_OF_RUNNING_PRERENDERS_EXCEEDED = "MaxNumOfRunningPrerendersExceeded"
     CANCEL_ALL_HOSTS_FOR_TESTING = "CancelAllHostsForTesting"
     DID_FAIL_LOAD = "DidFailLoad"
     STOP = "Stop"
@@ -250,9 +248,8 @@ class PrerenderFinalStatus(enum.Enum):
     MIXED_CONTENT = "MixedContent"
     TRIGGER_BACKGROUNDED = "TriggerBackgrounded"
     MEMORY_LIMIT_EXCEEDED = "MemoryLimitExceeded"
-    FAIL_TO_GET_MEMORY_USAGE = "FailToGetMemoryUsage"
     DATA_SAVER_ENABLED = "DataSaverEnabled"
-    HAS_EFFECTIVE_URL = "HasEffectiveUrl"
+    TRIGGER_URL_HAS_EFFECTIVE_URL = "TriggerUrlHasEffectiveUrl"
     ACTIVATED_BEFORE_STARTED = "ActivatedBeforeStarted"
     INACTIVE_PAGE_RESTRICTION = "InactivePageRestriction"
     START_FAILED = "StartFailed"
@@ -281,9 +278,20 @@ class PrerenderFinalStatus(enum.Enum):
     MEMORY_PRESSURE_ON_TRIGGER = "MemoryPressureOnTrigger"
     MEMORY_PRESSURE_AFTER_TRIGGERED = "MemoryPressureAfterTriggered"
     PRERENDERING_DISABLED_BY_DEV_TOOLS = "PrerenderingDisabledByDevTools"
-    RESOURCE_LOAD_BLOCKED_BY_CLIENT = "ResourceLoadBlockedByClient"
     SPECULATION_RULE_REMOVED = "SpeculationRuleRemoved"
     ACTIVATED_WITH_AUXILIARY_BROWSING_CONTEXTS = "ActivatedWithAuxiliaryBrowsingContexts"
+    MAX_NUM_OF_RUNNING_EAGER_PRERENDERS_EXCEEDED = "MaxNumOfRunningEagerPrerendersExceeded"
+    MAX_NUM_OF_RUNNING_NON_EAGER_PRERENDERS_EXCEEDED = "MaxNumOfRunningNonEagerPrerendersExceeded"
+    MAX_NUM_OF_RUNNING_EMBEDDER_PRERENDERS_EXCEEDED = "MaxNumOfRunningEmbedderPrerendersExceeded"
+    PRERENDERING_URL_HAS_EFFECTIVE_URL = "PrerenderingUrlHasEffectiveUrl"
+    REDIRECTED_PRERENDERING_URL_HAS_EFFECTIVE_URL = "RedirectedPrerenderingUrlHasEffectiveUrl"
+    ACTIVATION_URL_HAS_EFFECTIVE_URL = "ActivationUrlHasEffectiveUrl"
+    JAVA_SCRIPT_INTERFACE_ADDED = "JavaScriptInterfaceAdded"
+    JAVA_SCRIPT_INTERFACE_REMOVED = "JavaScriptInterfaceRemoved"
+    ALL_PRERENDERING_CANCELED = "AllPrerenderingCanceled"
+    WINDOW_CLOSED = "WindowClosed"
+    SLOW_NETWORK = "SlowNetwork"
+    OTHER_PRERENDERED_PAGE_ACTIVATED = "OtherPrerenderedPageActivated"
 
     def to_json(self) -> str:
         return self.value
@@ -324,8 +332,8 @@ class PrefetchStatus(enum.Enum):
     PREFETCH_FAILED_MIME_NOT_SUPPORTED = "PrefetchFailedMIMENotSupported"
     PREFETCH_FAILED_NET_ERROR = "PrefetchFailedNetError"
     PREFETCH_FAILED_NON2_XX = "PrefetchFailedNon2XX"
-    PREFETCH_FAILED_PER_PAGE_LIMIT_EXCEEDED = "PrefetchFailedPerPageLimitExceeded"
-    PREFETCH_EVICTED = "PrefetchEvicted"
+    PREFETCH_EVICTED_AFTER_CANDIDATE_REMOVED = "PrefetchEvictedAfterCandidateRemoved"
+    PREFETCH_EVICTED_FOR_NEWER_PREFETCH = "PrefetchEvictedForNewerPrefetch"
     PREFETCH_HELDBACK = "PrefetchHeldback"
     PREFETCH_INELIGIBLE_RETRY_AFTER = "PrefetchIneligibleRetryAfter"
     PREFETCH_IS_PRIVACY_DECOY = "PrefetchIsPrivacyDecoy"
@@ -355,6 +363,35 @@ class PrefetchStatus(enum.Enum):
     @classmethod
     def from_json(cls, json: str) -> PrefetchStatus:
         return cls(json)
+
+
+@dataclass
+class PrerenderMismatchedHeaders:
+    '''
+    Information of headers to be displayed when the header mismatch occurred.
+    '''
+    header_name: str
+
+    initial_value: typing.Optional[str] = None
+
+    activation_value: typing.Optional[str] = None
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['headerName'] = self.header_name
+        if self.initial_value is not None:
+            json['initialValue'] = self.initial_value
+        if self.activation_value is not None:
+            json['activationValue'] = self.activation_value
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> PrerenderMismatchedHeaders:
+        return cls(
+            header_name=str(json['headerName']),
+            initial_value=str(json['initialValue']) if json.get('initialValue', None) is not None else None,
+            activation_value=str(json['activationValue']) if json.get('activationValue', None) is not None else None,
+        )
 
 
 def enable() -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
@@ -397,32 +434,6 @@ class RuleSetRemoved:
     def from_json(cls, json: T_JSON_DICT) -> RuleSetRemoved:
         return cls(
             id_=RuleSetId.from_json(json['id'])
-        )
-
-
-@event_class('Preload.prerenderAttemptCompleted')
-@dataclass
-class PrerenderAttemptCompleted:
-    '''
-    Fired when a prerender attempt is completed.
-    '''
-    key: PreloadingAttemptKey
-    #: The frame id of the frame initiating prerendering.
-    initiating_frame_id: page.FrameId
-    prerendering_url: str
-    final_status: PrerenderFinalStatus
-    #: This is used to give users more information about the name of the API call
-    #: that is incompatible with prerender and has caused the cancellation of the attempt
-    disallowed_api_method: typing.Optional[str]
-
-    @classmethod
-    def from_json(cls, json: T_JSON_DICT) -> PrerenderAttemptCompleted:
-        return cls(
-            key=PreloadingAttemptKey.from_json(json['key']),
-            initiating_frame_id=page.FrameId.from_json(json['initiatingFrameId']),
-            prerendering_url=str(json['prerenderingUrl']),
-            final_status=PrerenderFinalStatus.from_json(json['finalStatus']),
-            disallowed_api_method=str(json['disallowedApiMethod']) if json.get('disallowedApiMethod', None) is not None else None
         )
 
 
@@ -487,6 +498,7 @@ class PrerenderStatusUpdated:
     #: This is used to give users more information about the name of Mojo interface
     #: that is incompatible with prerender and has caused the cancellation of the attempt.
     disallowed_mojo_interface: typing.Optional[str]
+    mismatched_headers: typing.Optional[typing.List[PrerenderMismatchedHeaders]]
 
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> PrerenderStatusUpdated:
@@ -494,7 +506,8 @@ class PrerenderStatusUpdated:
             key=PreloadingAttemptKey.from_json(json['key']),
             status=PreloadingStatus.from_json(json['status']),
             prerender_status=PrerenderFinalStatus.from_json(json['prerenderStatus']) if json.get('prerenderStatus', None) is not None else None,
-            disallowed_mojo_interface=str(json['disallowedMojoInterface']) if json.get('disallowedMojoInterface', None) is not None else None
+            disallowed_mojo_interface=str(json['disallowedMojoInterface']) if json.get('disallowedMojoInterface', None) is not None else None,
+            mismatched_headers=[PrerenderMismatchedHeaders.from_json(i) for i in json['mismatchedHeaders']] if json.get('mismatchedHeaders', None) is not None else None
         )
 
 

@@ -67,6 +67,11 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: PrerenderMismatchedHeaders
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 Commands
 --------
 
@@ -96,11 +101,6 @@ you use the event's attributes.
       :exclude-members: from_json, to_json
 
 .. autoclass:: RuleSetRemoved
-      :members:
-      :undoc-members:
-      :exclude-members: from_json, to_json
-
-.. autoclass:: PrerenderAttemptCompleted
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json

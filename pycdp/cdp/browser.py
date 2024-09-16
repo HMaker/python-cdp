@@ -106,6 +106,7 @@ class PermissionType(enum.Enum):
     AUDIO_CAPTURE = "audioCapture"
     BACKGROUND_SYNC = "backgroundSync"
     BACKGROUND_FETCH = "backgroundFetch"
+    CAPTURED_SURFACE_CONTROL = "capturedSurfaceControl"
     CLIPBOARD_READ_WRITE = "clipboardReadWrite"
     CLIPBOARD_SANITIZED_WRITE = "clipboardSanitizedWrite"
     DISPLAY_CAPTURE = "displayCapture"
@@ -123,11 +124,13 @@ class PermissionType(enum.Enum):
     PROTECTED_MEDIA_IDENTIFIER = "protectedMediaIdentifier"
     SENSORS = "sensors"
     STORAGE_ACCESS = "storageAccess"
+    SPEAKER_SELECTION = "speakerSelection"
     TOP_LEVEL_STORAGE_ACCESS = "topLevelStorageAccess"
     VIDEO_CAPTURE = "videoCapture"
     VIDEO_CAPTURE_PAN_TILT_ZOOM = "videoCapturePanTiltZoom"
     WAKE_LOCK_SCREEN = "wakeLockScreen"
     WAKE_LOCK_SYSTEM = "wakeLockSystem"
+    WEB_APP_INSTALLATION = "webAppInstallation"
     WINDOW_MANAGEMENT = "windowManagement"
 
     def to_json(self) -> str:
@@ -155,7 +158,7 @@ class PermissionSetting(enum.Enum):
 class PermissionDescriptor:
     '''
     Definition of PermissionDescriptor defined in the Permissions API:
-    https://w3c.github.io/permissions/#dictdef-permissiondescriptor.
+    https://w3c.github.io/permissions/#dom-permissiondescriptor.
     '''
     #: Name of permission.
     #: See https://cs.chromium.org/chromium/src/third_party/blink/renderer/modules/permissions/permission_descriptor.idl for valid permission names.
@@ -171,6 +174,9 @@ class PermissionDescriptor:
     #: For "clipboard" permission, may specify allowWithoutSanitization.
     allow_without_sanitization: typing.Optional[bool] = None
 
+    #: For "fullscreen" permission, must specify allowWithoutGesture:true.
+    allow_without_gesture: typing.Optional[bool] = None
+
     #: For "camera" permission, may specify panTiltZoom.
     pan_tilt_zoom: typing.Optional[bool] = None
 
@@ -183,6 +189,8 @@ class PermissionDescriptor:
             json['userVisibleOnly'] = self.user_visible_only
         if self.allow_without_sanitization is not None:
             json['allowWithoutSanitization'] = self.allow_without_sanitization
+        if self.allow_without_gesture is not None:
+            json['allowWithoutGesture'] = self.allow_without_gesture
         if self.pan_tilt_zoom is not None:
             json['panTiltZoom'] = self.pan_tilt_zoom
         return json
@@ -194,6 +202,7 @@ class PermissionDescriptor:
             sysex=bool(json['sysex']) if json.get('sysex', None) is not None else None,
             user_visible_only=bool(json['userVisibleOnly']) if json.get('userVisibleOnly', None) is not None else None,
             allow_without_sanitization=bool(json['allowWithoutSanitization']) if json.get('allowWithoutSanitization', None) is not None else None,
+            allow_without_gesture=bool(json['allowWithoutGesture']) if json.get('allowWithoutGesture', None) is not None else None,
             pan_tilt_zoom=bool(json['panTiltZoom']) if json.get('panTiltZoom', None) is not None else None,
         )
 
@@ -341,8 +350,6 @@ def reset_permissions(
     '''
     Reset all permission management for all origins.
 
-    **EXPERIMENTAL**
-
     :param browser_context_id: *(Optional)* BrowserContext to reset permissions. When omitted, default browser context is used.
     '''
     params: T_JSON_DICT = dict()
@@ -366,7 +373,7 @@ def set_download_behavior(
 
     **EXPERIMENTAL**
 
-    :param behavior: Whether to allow all or deny all download requests, or use default Chrome behavior if available (otherwise deny). ``allowAndName`` allows download and names files according to their dowmload guids.
+    :param behavior: Whether to allow all or deny all download requests, or use default Chrome behavior if available (otherwise deny). ``allowAndName`` allows download and names files according to their download guids.
     :param browser_context_id: *(Optional)* BrowserContext to set download behavior. When omitted, default browser context is used.
     :param download_path: *(Optional)* The default path to save downloaded files to. This is required if behavior is set to 'allow' or 'allowAndName'.
     :param events_enabled: *(Optional)* Whether to emit download events (defaults to false).
