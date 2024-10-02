@@ -130,6 +130,7 @@ class PermissionType(enum.Enum):
     VIDEO_CAPTURE_PAN_TILT_ZOOM = "videoCapturePanTiltZoom"
     WAKE_LOCK_SCREEN = "wakeLockScreen"
     WAKE_LOCK_SYSTEM = "wakeLockSystem"
+    WEB_APP_INSTALLATION = "webAppInstallation"
     WINDOW_MANAGEMENT = "windowManagement"
 
     def to_json(self) -> str:

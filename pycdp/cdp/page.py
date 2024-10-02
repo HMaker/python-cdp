@@ -202,10 +202,12 @@ class PermissionsPolicyFeature(enum.Enum):
     CLIPBOARD_READ = "clipboard-read"
     CLIPBOARD_WRITE = "clipboard-write"
     COMPUTE_PRESSURE = "compute-pressure"
+    CONTROLLED_FRAME = "controlled-frame"
     CROSS_ORIGIN_ISOLATED = "cross-origin-isolated"
     DEFERRED_FETCH = "deferred-fetch"
     DIGITAL_CREDENTIALS_GET = "digital-credentials-get"
     DIRECT_SOCKETS = "direct-sockets"
+    DIRECT_SOCKETS_PRIVATE = "direct-sockets-private"
     DISPLAY_CAPTURE = "display-capture"
     DOCUMENT_DOMAIN = "document-domain"
     ENCRYPTED_MEDIA = "encrypted-media"
@@ -231,6 +233,7 @@ class PermissionsPolicyFeature(enum.Enum):
     OTP_CREDENTIALS = "otp-credentials"
     PAYMENT = "payment"
     PICTURE_IN_PICTURE = "picture-in-picture"
+    POPINS = "popins"
     PRIVATE_AGGREGATION = "private-aggregation"
     PRIVATE_STATE_TOKEN_ISSUANCE = "private-state-token-issuance"
     PRIVATE_STATE_TOKEN_REDEMPTION = "private-state-token-redemption"
@@ -251,6 +254,7 @@ class PermissionsPolicyFeature(enum.Enum):
     USB = "usb"
     USB_UNRESTRICTED = "usb-unrestricted"
     VERTICAL_SCROLL = "vertical-scroll"
+    WEB_APP_INSTALLATION = "web-app-installation"
     WEB_PRINTING = "web-printing"
     WEB_SHARE = "web-share"
     WINDOW_MANAGEMENT = "window-management"
@@ -1117,14 +1121,16 @@ class FontSizes:
 
 
 class ClientNavigationReason(enum.Enum):
+    ANCHOR_CLICK = "anchorClick"
     FORM_SUBMISSION_GET = "formSubmissionGet"
     FORM_SUBMISSION_POST = "formSubmissionPost"
     HTTP_HEADER_REFRESH = "httpHeaderRefresh"
-    SCRIPT_INITIATED = "scriptInitiated"
+    INITIAL_FRAME_NAVIGATION = "initialFrameNavigation"
     META_TAG_REFRESH = "metaTagRefresh"
+    OTHER = "other"
     PAGE_BLOCK_INTERSTITIAL = "pageBlockInterstitial"
     RELOAD = "reload"
-    ANCHOR_CLICK = "anchorClick"
+    SCRIPT_INITIATED = "scriptInitiated"
 
     def to_json(self) -> str:
         return self.value
@@ -1796,6 +1802,7 @@ class BackForwardCacheNotRestoredReason(enum.Enum):
     CONTENT_WEB_USB = "ContentWebUSB"
     CONTENT_MEDIA_SESSION_SERVICE = "ContentMediaSessionService"
     CONTENT_SCREEN_READER = "ContentScreenReader"
+    CONTENT_DISCARDED = "ContentDiscarded"
     EMBEDDER_POPUP_BLOCKER_TAB_HELPER = "EmbedderPopupBlockerTabHelper"
     EMBEDDER_SAFE_BROWSING_TRIGGERED_POPUP_BLOCKER = "EmbedderSafeBrowsingTriggeredPopupBlocker"
     EMBEDDER_SAFE_BROWSING_THREAT_DETAILS = "EmbedderSafeBrowsingThreatDetails"
@@ -3394,6 +3401,25 @@ class FrameDetached:
         )
 
 
+@event_class('Page.frameSubtreeWillBeDetached')
+@dataclass
+class FrameSubtreeWillBeDetached:
+    '''
+    **EXPERIMENTAL**
+
+    Fired before frame subtree is detached. Emitted before any frame of the
+    subtree is actually detached.
+    '''
+    #: Id of the frame that is the root of the subtree that will be detached.
+    frame_id: FrameId
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> FrameSubtreeWillBeDetached:
+        return cls(
+            frame_id=FrameId.from_json(json['frameId'])
+        )
+
+
 @event_class('Page.frameNavigated')
 @dataclass
 class FrameNavigated:
@@ -3754,12 +3780,15 @@ class NavigatedWithinDocument:
     frame_id: FrameId
     #: Frame's new url.
     url: str
+    #: Navigation type
+    navigation_type: str
 
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> NavigatedWithinDocument:
         return cls(
             frame_id=FrameId.from_json(json['frameId']),
-            url=str(json['url'])
+            url=str(json['url']),
+            navigation_type=str(json['navigationType'])
         )
 
 

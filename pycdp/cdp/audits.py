@@ -121,6 +121,8 @@ class CookieWarningReason(enum.Enum):
     WARN_DOMAIN_NON_ASCII = "WarnDomainNonASCII"
     WARN_THIRD_PARTY_PHASEOUT = "WarnThirdPartyPhaseout"
     WARN_CROSS_SITE_REDIRECT_DOWNGRADE_CHANGES_INCLUSION = "WarnCrossSiteRedirectDowngradeChangesInclusion"
+    WARN_DEPRECATION_TRIAL_METADATA = "WarnDeprecationTrialMetadata"
+    WARN_THIRD_PARTY_COOKIE_HEURISTIC = "WarnThirdPartyCookieHeuristic"
 
     def to_json(self) -> str:
         return self.value
@@ -651,6 +653,7 @@ class AttributionReportingIssueType(enum.Enum):
     NO_REGISTER_TRIGGER_HEADER = "NoRegisterTriggerHeader"
     NO_REGISTER_OS_SOURCE_HEADER = "NoRegisterOsSourceHeader"
     NO_REGISTER_OS_TRIGGER_HEADER = "NoRegisterOsTriggerHeader"
+    NAVIGATION_REGISTRATION_UNIQUE_SCOPE_ALREADY_SET = "NavigationRegistrationUniqueScopeAlreadySet"
 
     def to_json(self) -> str:
         return self.value

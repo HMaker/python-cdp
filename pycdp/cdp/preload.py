@@ -332,7 +332,6 @@ class PrefetchStatus(enum.Enum):
     PREFETCH_FAILED_MIME_NOT_SUPPORTED = "PrefetchFailedMIMENotSupported"
     PREFETCH_FAILED_NET_ERROR = "PrefetchFailedNetError"
     PREFETCH_FAILED_NON2_XX = "PrefetchFailedNon2XX"
-    PREFETCH_FAILED_PER_PAGE_LIMIT_EXCEEDED = "PrefetchFailedPerPageLimitExceeded"
     PREFETCH_EVICTED_AFTER_CANDIDATE_REMOVED = "PrefetchEvictedAfterCandidateRemoved"
     PREFETCH_EVICTED_FOR_NEWER_PREFETCH = "PrefetchEvictedForNewerPrefetch"
     PREFETCH_HELDBACK = "PrefetchHeldback"
