@@ -29,6 +29,16 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: DialogButton
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AccountUrlType
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: Account
       :members:
       :undoc-members:
@@ -46,11 +56,15 @@ commands, and ``z`` is the return type you should pay attention
 to. For more information, see
 :ref:`Getting Started: Commands <getting-started-commands>`.
 
+.. autofunction:: click_dialog_button
+
 .. autofunction:: disable
 
 .. autofunction:: dismiss_dialog
 
 .. autofunction:: enable
+
+.. autofunction:: open_url
 
 .. autofunction:: reset_cooldown
 
@@ -64,6 +78,11 @@ yourself. Instead, the API creates events for you and then
 you use the event's attributes.
 
 .. autoclass:: DialogShown
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: DialogClosed
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json

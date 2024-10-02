@@ -27,6 +27,11 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: DevicePosture
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: MediaFeature
       :members:
       :undoc-members:
@@ -43,6 +48,51 @@ arguments to other commands.
       :exclude-members: from_json, to_json
 
 .. autoclass:: UserAgentMetadata
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: SensorType
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: SensorMetadata
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: SensorReadingSingle
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: SensorReadingXYZ
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: SensorReadingQuaternion
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: SensorReading
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: PressureSource
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: PressureState
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: PressureMetadata
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
@@ -68,9 +118,13 @@ to. For more information, see
 
 .. autofunction:: clear_device_metrics_override
 
+.. autofunction:: clear_device_posture_override
+
 .. autofunction:: clear_geolocation_override
 
 .. autofunction:: clear_idle_override
+
+.. autofunction:: get_overridden_sensor_information
 
 .. autofunction:: reset_page_scale_factor
 
@@ -83,6 +137,8 @@ to. For more information, see
 .. autofunction:: set_default_background_color_override
 
 .. autofunction:: set_device_metrics_override
+
+.. autofunction:: set_device_posture_override
 
 .. autofunction:: set_disabled_image_types
 
@@ -108,9 +164,17 @@ to. For more information, see
 
 .. autofunction:: set_page_scale_factor
 
+.. autofunction:: set_pressure_source_override_enabled
+
+.. autofunction:: set_pressure_state_override
+
 .. autofunction:: set_script_execution_disabled
 
 .. autofunction:: set_scrollbars_hidden
+
+.. autofunction:: set_sensor_override_enabled
+
+.. autofunction:: set_sensor_override_readings
 
 .. autofunction:: set_timezone_override
 

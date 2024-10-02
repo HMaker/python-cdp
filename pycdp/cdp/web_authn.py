@@ -106,6 +106,16 @@ class VirtualAuthenticatorOptions:
     #: Defaults to false.
     is_user_verified: typing.Optional[bool] = None
 
+    #: Credentials created by this authenticator will have the backup
+    #: eligibility (BE) flag set to this value. Defaults to false.
+    #: https://w3c.github.io/webauthn/#sctn-credential-backup
+    default_backup_eligibility: typing.Optional[bool] = None
+
+    #: Credentials created by this authenticator will have the backup state
+    #: (BS) flag set to this value. Defaults to false.
+    #: https://w3c.github.io/webauthn/#sctn-credential-backup
+    default_backup_state: typing.Optional[bool] = None
+
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
         json['protocol'] = self.protocol.to_json()
@@ -128,6 +138,10 @@ class VirtualAuthenticatorOptions:
             json['automaticPresenceSimulation'] = self.automatic_presence_simulation
         if self.is_user_verified is not None:
             json['isUserVerified'] = self.is_user_verified
+        if self.default_backup_eligibility is not None:
+            json['defaultBackupEligibility'] = self.default_backup_eligibility
+        if self.default_backup_state is not None:
+            json['defaultBackupState'] = self.default_backup_state
         return json
 
     @classmethod
@@ -144,6 +158,8 @@ class VirtualAuthenticatorOptions:
             has_prf=bool(json['hasPrf']) if json.get('hasPrf', None) is not None else None,
             automatic_presence_simulation=bool(json['automaticPresenceSimulation']) if json.get('automaticPresenceSimulation', None) is not None else None,
             is_user_verified=bool(json['isUserVerified']) if json.get('isUserVerified', None) is not None else None,
+            default_backup_eligibility=bool(json['defaultBackupEligibility']) if json.get('defaultBackupEligibility', None) is not None else None,
+            default_backup_state=bool(json['defaultBackupState']) if json.get('defaultBackupState', None) is not None else None,
         )
 
 
@@ -173,6 +189,16 @@ class Credential:
     #: See https://w3c.github.io/webauthn/#sctn-large-blob-extension (Encoded as a base64 string when passed over JSON)
     large_blob: typing.Optional[str] = None
 
+    #: Assertions returned by this credential will have the backup eligibility
+    #: (BE) flag set to this value. Defaults to the authenticator's
+    #: defaultBackupEligibility value.
+    backup_eligibility: typing.Optional[bool] = None
+
+    #: Assertions returned by this credential will have the backup state (BS)
+    #: flag set to this value. Defaults to the authenticator's
+    #: defaultBackupState value.
+    backup_state: typing.Optional[bool] = None
+
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
         json['credentialId'] = self.credential_id
@@ -185,6 +211,10 @@ class Credential:
             json['userHandle'] = self.user_handle
         if self.large_blob is not None:
             json['largeBlob'] = self.large_blob
+        if self.backup_eligibility is not None:
+            json['backupEligibility'] = self.backup_eligibility
+        if self.backup_state is not None:
+            json['backupState'] = self.backup_state
         return json
 
     @classmethod
@@ -197,6 +227,8 @@ class Credential:
             rp_id=str(json['rpId']) if json.get('rpId', None) is not None else None,
             user_handle=str(json['userHandle']) if json.get('userHandle', None) is not None else None,
             large_blob=str(json['largeBlob']) if json.get('largeBlob', None) is not None else None,
+            backup_eligibility=bool(json['backupEligibility']) if json.get('backupEligibility', None) is not None else None,
+            backup_state=bool(json['backupState']) if json.get('backupState', None) is not None else None,
         )
 
 
@@ -430,6 +462,35 @@ def set_automatic_presence_simulation(
     params['enabled'] = enabled
     cmd_dict: T_JSON_DICT = {
         'method': 'WebAuthn.setAutomaticPresenceSimulation',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def set_credential_properties(
+        authenticator_id: AuthenticatorId,
+        credential_id: str,
+        backup_eligibility: typing.Optional[bool] = None,
+        backup_state: typing.Optional[bool] = None
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Allows setting credential properties.
+    https://w3c.github.io/webauthn/#sctn-automation-set-credential-properties
+
+    :param authenticator_id:
+    :param credential_id:
+    :param backup_eligibility: *(Optional)*
+    :param backup_state: *(Optional)*
+    '''
+    params: T_JSON_DICT = dict()
+    params['authenticatorId'] = authenticator_id.to_json()
+    params['credentialId'] = credential_id
+    if backup_eligibility is not None:
+        params['backupEligibility'] = backup_eligibility
+    if backup_state is not None:
+        params['backupState'] = backup_state
+    cmd_dict: T_JSON_DICT = {
+        'method': 'WebAuthn.setCredentialProperties',
         'params': params,
     }
     json = yield cmd_dict
