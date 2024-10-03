@@ -226,7 +226,6 @@ class SensorType(enum.Enum):
     GYROSCOPE = "gyroscope"
     LINEAR_ACCELERATION = "linear-acceleration"
     MAGNETOMETER = "magnetometer"
-    PROXIMITY = "proximity"
     RELATIVE_ORIENTATION = "relative-orientation"
 
     def to_json(self) -> str:

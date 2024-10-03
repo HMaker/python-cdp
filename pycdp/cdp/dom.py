@@ -86,6 +86,7 @@ class PseudoType(enum.Enum):
     AFTER = "after"
     MARKER = "marker"
     BACKDROP = "backdrop"
+    COLUMN = "column"
     SELECTION = "selection"
     SEARCH_TEXT = "search-text"
     TARGET_TEXT = "target-text"
@@ -95,6 +96,8 @@ class PseudoType(enum.Enum):
     FIRST_LINE_INHERITED = "first-line-inherited"
     SCROLL_MARKER = "scroll-marker"
     SCROLL_MARKER_GROUP = "scroll-marker-group"
+    SCROLL_NEXT_BUTTON = "scroll-next-button"
+    SCROLL_PREV_BUTTON = "scroll-prev-button"
     SCROLLBAR = "scrollbar"
     SCROLLBAR_THUMB = "scrollbar-thumb"
     SCROLLBAR_BUTTON = "scrollbar-button"
@@ -108,6 +111,12 @@ class PseudoType(enum.Enum):
     VIEW_TRANSITION_IMAGE_PAIR = "view-transition-image-pair"
     VIEW_TRANSITION_OLD = "view-transition-old"
     VIEW_TRANSITION_NEW = "view-transition-new"
+    PLACEHOLDER = "placeholder"
+    FILE_SELECTOR_BUTTON = "file-selector-button"
+    DETAILS_CONTENT = "details-content"
+    SELECT_FALLBACK_BUTTON = "select-fallback-button"
+    SELECT_FALLBACK_BUTTON_TEXT = "select-fallback-button-text"
+    PICKER = "picker"
 
     def to_json(self) -> str:
         return self.value
@@ -298,6 +307,8 @@ class Node:
 
     assigned_slot: typing.Optional[BackendNode] = None
 
+    is_scrollable: typing.Optional[bool] = None
+
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
         json['nodeId'] = self.node_id.to_json()
@@ -356,6 +367,8 @@ class Node:
             json['compatibilityMode'] = self.compatibility_mode.to_json()
         if self.assigned_slot is not None:
             json['assignedSlot'] = self.assigned_slot.to_json()
+        if self.is_scrollable is not None:
+            json['isScrollable'] = self.is_scrollable
         return json
 
     @classmethod
@@ -392,6 +405,30 @@ class Node:
             is_svg=bool(json['isSVG']) if json.get('isSVG', None) is not None else None,
             compatibility_mode=CompatibilityMode.from_json(json['compatibilityMode']) if json.get('compatibilityMode', None) is not None else None,
             assigned_slot=BackendNode.from_json(json['assignedSlot']) if json.get('assignedSlot', None) is not None else None,
+            is_scrollable=bool(json['isScrollable']) if json.get('isScrollable', None) is not None else None,
+        )
+
+
+@dataclass
+class DetachedElementInfo:
+    '''
+    A structure to hold the top-level node of a detached tree and an array of its retained descendants.
+    '''
+    tree_node: Node
+
+    retained_node_ids: typing.List[NodeId]
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['treeNode'] = self.tree_node.to_json()
+        json['retainedNodeIds'] = [i.to_json() for i in self.retained_node_ids]
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> DetachedElementInfo:
+        return cls(
+            tree_node=Node.from_json(json['treeNode']),
+            retained_node_ids=[NodeId.from_json(i) for i in json['retainedNodeIds']],
         )
 
 
@@ -1548,6 +1585,21 @@ def get_file_info(
     return str(json['path'])
 
 
+def get_detached_dom_nodes() -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.List[DetachedElementInfo]]:
+    '''
+    Returns list of detached nodes
+
+    **EXPERIMENTAL**
+
+    :returns: The list of detached nodes
+    '''
+    cmd_dict: T_JSON_DICT = {
+        'method': 'DOM.getDetachedDomNodes',
+    }
+    json = yield cmd_dict
+    return [DetachedElementInfo.from_json(i) for i in json['detachedNodes']]
+
+
 def set_inspected_node(
         node_id: NodeId
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
@@ -1962,6 +2014,27 @@ class TopLayerElementsUpdated:
     def from_json(cls, json: T_JSON_DICT) -> TopLayerElementsUpdated:
         return cls(
 
+        )
+
+
+@event_class('DOM.scrollableFlagUpdated')
+@dataclass
+class ScrollableFlagUpdated:
+    '''
+    **EXPERIMENTAL**
+
+    Fired when a node's scrollability state changes.
+    '''
+    #: The id of the node.
+    node_id: NodeId
+    #: If the node is scrollable.
+    is_scrollable: bool
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> ScrollableFlagUpdated:
+        return cls(
+            node_id=NodeId.from_json(json['nodeId']),
+            is_scrollable=bool(json['isScrollable'])
         )
 
 

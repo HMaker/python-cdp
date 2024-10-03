@@ -58,7 +58,7 @@ def get_storage_items(
         keys: typing.Optional[typing.List[str]] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,dict]:
     '''
-    Gets data from extension storage in the given ``area``. If ``keys`` is
+    Gets data from extension storage in the given ``storageArea``. If ``keys`` is
     specified, these are used to filter the result.
 
     :param id_: ID of extension.
@@ -77,3 +77,70 @@ def get_storage_items(
     }
     json = yield cmd_dict
     return dict(json['data'])
+
+
+def remove_storage_items(
+        id_: str,
+        storage_area: StorageArea,
+        keys: typing.List[str]
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Removes ``keys`` from extension storage in the given ``storageArea``.
+
+    :param id_: ID of extension.
+    :param storage_area: StorageArea to remove data from.
+    :param keys: Keys to remove.
+    '''
+    params: T_JSON_DICT = dict()
+    params['id'] = id_
+    params['storageArea'] = storage_area.to_json()
+    params['keys'] = [i for i in keys]
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Extensions.removeStorageItems',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def clear_storage_items(
+        id_: str,
+        storage_area: StorageArea
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Clears extension storage in the given ``storageArea``.
+
+    :param id_: ID of extension.
+    :param storage_area: StorageArea to remove data from.
+    '''
+    params: T_JSON_DICT = dict()
+    params['id'] = id_
+    params['storageArea'] = storage_area.to_json()
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Extensions.clearStorageItems',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def set_storage_items(
+        id_: str,
+        storage_area: StorageArea,
+        values: dict
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Sets ``values`` in extension storage in the given ``storageArea``. The provided ``values``
+    will be merged with existing values in the storage area.
+
+    :param id_: ID of extension.
+    :param storage_area: StorageArea to set data in.
+    :param values: Values to set.
+    '''
+    params: T_JSON_DICT = dict()
+    params['id'] = id_
+    params['storageArea'] = storage_area.to_json()
+    params['values'] = values
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Extensions.setStorageItems',
+        'params': params,
+    }
+    json = yield cmd_dict

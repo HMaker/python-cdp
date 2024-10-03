@@ -1447,11 +1447,11 @@ class CookieExemptionReason(enum.Enum):
     USER_SETTING = "UserSetting"
     TPCD_METADATA = "TPCDMetadata"
     TPCD_DEPRECATION_TRIAL = "TPCDDeprecationTrial"
+    TOP_LEVEL_TPCD_DEPRECATION_TRIAL = "TopLevelTPCDDeprecationTrial"
     TPCD_HEURISTICS = "TPCDHeuristics"
     ENTERPRISE_POLICY = "EnterprisePolicy"
     STORAGE_ACCESS = "StorageAccess"
     TOP_LEVEL_STORAGE_ACCESS = "TopLevelStorageAccess"
-    CORS_OPT_IN = "CorsOptIn"
     SCHEME = "Scheme"
 
     def to_json(self) -> str:
