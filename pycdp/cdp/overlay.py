@@ -1242,11 +1242,14 @@ def set_show_hit_test_borders(
     json = yield cmd_dict
 
 
+@deprecated(version="1.3")
 def set_show_web_vitals(
         show: bool
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
     '''
-    Request that backend shows an overlay with web vital metrics.
+    Deprecated, no longer has any effect.
+
+    .. deprecated:: 1.3
 
     :param show:
     '''

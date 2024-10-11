@@ -292,6 +292,7 @@ class PrerenderFinalStatus(enum.Enum):
     WINDOW_CLOSED = "WindowClosed"
     SLOW_NETWORK = "SlowNetwork"
     OTHER_PRERENDERED_PAGE_ACTIVATED = "OtherPrerenderedPageActivated"
+    V8_OPTIMIZER_DISABLED = "V8OptimizerDisabled"
 
     def to_json(self) -> str:
         return self.value

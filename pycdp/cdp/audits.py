@@ -121,6 +121,8 @@ class CookieWarningReason(enum.Enum):
     WARN_DOMAIN_NON_ASCII = "WarnDomainNonASCII"
     WARN_THIRD_PARTY_PHASEOUT = "WarnThirdPartyPhaseout"
     WARN_CROSS_SITE_REDIRECT_DOWNGRADE_CHANGES_INCLUSION = "WarnCrossSiteRedirectDowngradeChangesInclusion"
+    WARN_DEPRECATION_TRIAL_METADATA = "WarnDeprecationTrialMetadata"
+    WARN_THIRD_PARTY_COOKIE_HEURISTIC = "WarnThirdPartyCookieHeuristic"
 
     def to_json(self) -> str:
         return self.value
@@ -1033,7 +1035,7 @@ class FederatedAuthRequestIssueReason(enum.Enum):
     THIRD_PARTY_COOKIES_BLOCKED = "ThirdPartyCookiesBlocked"
     NOT_SIGNED_IN_WITH_IDP = "NotSignedInWithIdp"
     MISSING_TRANSIENT_USER_ACTIVATION = "MissingTransientUserActivation"
-    REPLACED_BY_BUTTON_MODE = "ReplacedByButtonMode"
+    REPLACED_BY_ACTIVE_MODE = "ReplacedByActiveMode"
     INVALID_FIELDS_SPECIFIED = "InvalidFieldsSpecified"
     RELYING_PARTY_ORIGIN_IS_OPAQUE = "RelyingPartyOriginIsOpaque"
     TYPE_NOT_MATCHING = "TypeNotMatching"
