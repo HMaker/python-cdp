@@ -114,8 +114,6 @@ class PseudoType(enum.Enum):
     PLACEHOLDER = "placeholder"
     FILE_SELECTOR_BUTTON = "file-selector-button"
     DETAILS_CONTENT = "details-content"
-    SELECT_FALLBACK_BUTTON = "select-fallback-button"
-    SELECT_FALLBACK_BUTTON_TEXT = "select-fallback-button-text"
     PICKER = "picker"
 
     def to_json(self) -> str:

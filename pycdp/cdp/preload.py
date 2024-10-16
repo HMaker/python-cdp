@@ -293,6 +293,7 @@ class PrerenderFinalStatus(enum.Enum):
     SLOW_NETWORK = "SlowNetwork"
     OTHER_PRERENDERED_PAGE_ACTIVATED = "OtherPrerenderedPageActivated"
     V8_OPTIMIZER_DISABLED = "V8OptimizerDisabled"
+    PRERENDER_FAILED_DURING_PREFETCH = "PrerenderFailedDuringPrefetch"
 
     def to_json(self) -> str:
         return self.value
