@@ -249,7 +249,7 @@ class CSSStyleSheetHeader:
     frame_id: page.FrameId
 
     #: Stylesheet resource URL. Empty if this is a constructed stylesheet created using
-    #: new CSSStyleSheet() (but non-empty if this is a constructed sylesheet imported
+    #: new CSSStyleSheet() (but non-empty if this is a constructed stylesheet imported
     #: as a CSS module script).
     source_url: str
 
@@ -1005,6 +1005,9 @@ class PlatformFontUsage:
     #: Font's family name reported by platform.
     family_name: str
 
+    #: Font's PostScript name reported by platform.
+    post_script_name: str
+
     #: Indicates if the font was downloaded or resolved locally.
     is_custom_font: bool
 
@@ -1014,6 +1017,7 @@ class PlatformFontUsage:
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
         json['familyName'] = self.family_name
+        json['postScriptName'] = self.post_script_name
         json['isCustomFont'] = self.is_custom_font
         json['glyphCount'] = self.glyph_count
         return json
@@ -1022,6 +1026,7 @@ class PlatformFontUsage:
     def from_json(cls, json: T_JSON_DICT) -> PlatformFontUsage:
         return cls(
             family_name=str(json['familyName']),
+            post_script_name=str(json['postScriptName']),
             is_custom_font=bool(json['isCustomFont']),
             glyph_count=float(json['glyphCount']),
         )
@@ -1167,26 +1172,43 @@ class CSSTryRule:
 
 
 @dataclass
-class CSSPositionFallbackRule:
+class CSSPositionTryRule:
     '''
-    CSS position-fallback rule representation.
+    CSS @position-try rule representation.
     '''
+    #: The prelude dashed-ident name
     name: Value
 
-    #: List of keyframes.
-    try_rules: typing.List[CSSTryRule]
+    #: Parent stylesheet's origin.
+    origin: StyleSheetOrigin
+
+    #: Associated style declaration.
+    style: CSSStyle
+
+    active: bool
+
+    #: The css style sheet identifier (absent for user agent stylesheet and user-specified
+    #: stylesheet rules) this rule came from.
+    style_sheet_id: typing.Optional[StyleSheetId] = None
 
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
         json['name'] = self.name.to_json()
-        json['tryRules'] = [i.to_json() for i in self.try_rules]
+        json['origin'] = self.origin.to_json()
+        json['style'] = self.style.to_json()
+        json['active'] = self.active
+        if self.style_sheet_id is not None:
+            json['styleSheetId'] = self.style_sheet_id.to_json()
         return json
 
     @classmethod
-    def from_json(cls, json: T_JSON_DICT) -> CSSPositionFallbackRule:
+    def from_json(cls, json: T_JSON_DICT) -> CSSPositionTryRule:
         return cls(
             name=Value.from_json(json['name']),
-            try_rules=[CSSTryRule.from_json(i) for i in json['tryRules']],
+            origin=StyleSheetOrigin.from_json(json['origin']),
+            style=CSSStyle.from_json(json['style']),
+            active=bool(json['active']),
+            style_sheet_id=StyleSheetId.from_json(json['styleSheetId']) if json.get('styleSheetId', None) is not None else None,
         )
 
 
@@ -1212,6 +1234,112 @@ class CSSKeyframesRule:
         return cls(
             animation_name=Value.from_json(json['animationName']),
             keyframes=[CSSKeyframeRule.from_json(i) for i in json['keyframes']],
+        )
+
+
+@dataclass
+class CSSPropertyRegistration:
+    '''
+    Representation of a custom property registration through CSS.registerProperty
+    '''
+    property_name: str
+
+    inherits: bool
+
+    syntax: str
+
+    initial_value: typing.Optional[Value] = None
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['propertyName'] = self.property_name
+        json['inherits'] = self.inherits
+        json['syntax'] = self.syntax
+        if self.initial_value is not None:
+            json['initialValue'] = self.initial_value.to_json()
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> CSSPropertyRegistration:
+        return cls(
+            property_name=str(json['propertyName']),
+            inherits=bool(json['inherits']),
+            syntax=str(json['syntax']),
+            initial_value=Value.from_json(json['initialValue']) if json.get('initialValue', None) is not None else None,
+        )
+
+
+@dataclass
+class CSSFontPaletteValuesRule:
+    '''
+    CSS font-palette-values rule representation.
+    '''
+    #: Parent stylesheet's origin.
+    origin: StyleSheetOrigin
+
+    #: Associated font palette name.
+    font_palette_name: Value
+
+    #: Associated style declaration.
+    style: CSSStyle
+
+    #: The css style sheet identifier (absent for user agent stylesheet and user-specified
+    #: stylesheet rules) this rule came from.
+    style_sheet_id: typing.Optional[StyleSheetId] = None
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['origin'] = self.origin.to_json()
+        json['fontPaletteName'] = self.font_palette_name.to_json()
+        json['style'] = self.style.to_json()
+        if self.style_sheet_id is not None:
+            json['styleSheetId'] = self.style_sheet_id.to_json()
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> CSSFontPaletteValuesRule:
+        return cls(
+            origin=StyleSheetOrigin.from_json(json['origin']),
+            font_palette_name=Value.from_json(json['fontPaletteName']),
+            style=CSSStyle.from_json(json['style']),
+            style_sheet_id=StyleSheetId.from_json(json['styleSheetId']) if json.get('styleSheetId', None) is not None else None,
+        )
+
+
+@dataclass
+class CSSPropertyRule:
+    '''
+    CSS property at-rule representation.
+    '''
+    #: Parent stylesheet's origin.
+    origin: StyleSheetOrigin
+
+    #: Associated property name.
+    property_name: Value
+
+    #: Associated style declaration.
+    style: CSSStyle
+
+    #: The css style sheet identifier (absent for user agent stylesheet and user-specified
+    #: stylesheet rules) this rule came from.
+    style_sheet_id: typing.Optional[StyleSheetId] = None
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['origin'] = self.origin.to_json()
+        json['propertyName'] = self.property_name.to_json()
+        json['style'] = self.style.to_json()
+        if self.style_sheet_id is not None:
+            json['styleSheetId'] = self.style_sheet_id.to_json()
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> CSSPropertyRule:
+        return cls(
+            origin=StyleSheetOrigin.from_json(json['origin']),
+            property_name=Value.from_json(json['propertyName']),
+            style=CSSStyle.from_json(json['style']),
+            style_sheet_id=StyleSheetId.from_json(json['styleSheetId']) if json.get('styleSheetId', None) is not None else None,
         )
 
 
@@ -1285,7 +1413,8 @@ class StyleDeclarationEdit:
 def add_rule(
         style_sheet_id: StyleSheetId,
         rule_text: str,
-        location: SourceRange
+        location: SourceRange,
+        node_for_property_syntax_validation: typing.Optional[dom.NodeId] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,CSSRule]:
     '''
     Inserts a new rule with the given ``ruleText`` in a stylesheet with given ``styleSheetId``, at the
@@ -1294,12 +1423,15 @@ def add_rule(
     :param style_sheet_id: The css style sheet identifier where a new rule should be inserted.
     :param rule_text: The text of a new rule.
     :param location: Text position of a new rule in the target style sheet.
+    :param node_for_property_syntax_validation: **(EXPERIMENTAL)** *(Optional)* NodeId for the DOM node in whose context custom property declarations for registered properties should be validated. If omitted, declarations in the new rule text can only be validated statically, which may produce incorrect results if the declaration contains a var() for example.
     :returns: The newly created rule.
     '''
     params: T_JSON_DICT = dict()
     params['styleSheetId'] = style_sheet_id.to_json()
     params['ruleText'] = rule_text
     params['location'] = location.to_json()
+    if node_for_property_syntax_validation is not None:
+        params['nodeForPropertySyntaxValidation'] = node_for_property_syntax_validation.to_json()
     cmd_dict: T_JSON_DICT = {
         'method': 'CSS.addRule',
         'params': params,
@@ -1460,7 +1592,7 @@ def get_inline_styles_for_node(
 
 def get_matched_styles_for_node(
         node_id: dom.NodeId
-    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.Tuple[typing.Optional[CSSStyle], typing.Optional[CSSStyle], typing.Optional[typing.List[RuleMatch]], typing.Optional[typing.List[PseudoElementMatches]], typing.Optional[typing.List[InheritedStyleEntry]], typing.Optional[typing.List[InheritedPseudoElementMatches]], typing.Optional[typing.List[CSSKeyframesRule]], typing.Optional[typing.List[CSSPositionFallbackRule]], typing.Optional[dom.NodeId]]]:
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.Tuple[typing.Optional[CSSStyle], typing.Optional[CSSStyle], typing.Optional[typing.List[RuleMatch]], typing.Optional[typing.List[PseudoElementMatches]], typing.Optional[typing.List[InheritedStyleEntry]], typing.Optional[typing.List[InheritedPseudoElementMatches]], typing.Optional[typing.List[CSSKeyframesRule]], typing.Optional[typing.List[CSSPositionTryRule]], typing.Optional[int], typing.Optional[typing.List[CSSPropertyRule]], typing.Optional[typing.List[CSSPropertyRegistration]], typing.Optional[CSSFontPaletteValuesRule], typing.Optional[dom.NodeId]]]:
     '''
     Returns requested styles for a DOM node identified by ``nodeId``.
 
@@ -1474,8 +1606,12 @@ def get_matched_styles_for_node(
         4. **inherited** - *(Optional)* A chain of inherited styles (from the immediate node parent up to the DOM tree root).
         5. **inheritedPseudoElements** - *(Optional)* A chain of inherited pseudo element styles (from the immediate node parent up to the DOM tree root).
         6. **cssKeyframesRules** - *(Optional)* A list of CSS keyframed animations matching this node.
-        7. **cssPositionFallbackRules** - *(Optional)* A list of CSS position fallbacks matching this node.
-        8. **parentLayoutNodeId** - *(Optional)* Id of the first parent element that does not have display: contents.
+        7. **cssPositionTryRules** - *(Optional)* A list of CSS @position-try rules matching this node, based on the position-try-fallbacks property.
+        8. **activePositionFallbackIndex** - *(Optional)* Index of the active fallback in the applied position-try-fallback property, will not be set if there is no active position-try fallback.
+        9. **cssPropertyRules** - *(Optional)* A list of CSS at-property rules matching this node.
+        10. **cssPropertyRegistrations** - *(Optional)* A list of CSS property registrations matching this node.
+        11. **cssFontPaletteValuesRule** - *(Optional)* A font-palette-values rule matching this node.
+        12. **parentLayoutNodeId** - *(Optional)* Id of the first parent element that does not have display: contents.
     '''
     params: T_JSON_DICT = dict()
     params['nodeId'] = node_id.to_json()
@@ -1492,7 +1628,11 @@ def get_matched_styles_for_node(
         [InheritedStyleEntry.from_json(i) for i in json['inherited']] if json.get('inherited', None) is not None else None,
         [InheritedPseudoElementMatches.from_json(i) for i in json['inheritedPseudoElements']] if json.get('inheritedPseudoElements', None) is not None else None,
         [CSSKeyframesRule.from_json(i) for i in json['cssKeyframesRules']] if json.get('cssKeyframesRules', None) is not None else None,
-        [CSSPositionFallbackRule.from_json(i) for i in json['cssPositionFallbackRules']] if json.get('cssPositionFallbackRules', None) is not None else None,
+        [CSSPositionTryRule.from_json(i) for i in json['cssPositionTryRules']] if json.get('cssPositionTryRules', None) is not None else None,
+        int(json['activePositionFallbackIndex']) if json.get('activePositionFallbackIndex', None) is not None else None,
+        [CSSPropertyRule.from_json(i) for i in json['cssPropertyRules']] if json.get('cssPropertyRules', None) is not None else None,
+        [CSSPropertyRegistration.from_json(i) for i in json['cssPropertyRegistrations']] if json.get('cssPropertyRegistrations', None) is not None else None,
+        CSSFontPaletteValuesRule.from_json(json['cssFontPaletteValuesRule']) if json.get('cssFontPaletteValuesRule', None) is not None else None,
         dom.NodeId.from_json(json['parentLayoutNodeId']) if json.get('parentLayoutNodeId', None) is not None else None
     )
 
@@ -1573,6 +1713,31 @@ def get_layers_for_node(
     return CSSLayerData.from_json(json['rootLayer'])
 
 
+def get_location_for_selector(
+        style_sheet_id: StyleSheetId,
+        selector_text: str
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.List[SourceRange]]:
+    '''
+    Given a CSS selector text and a style sheet ID, getLocationForSelector
+    returns an array of locations of the CSS selector in the style sheet.
+
+    **EXPERIMENTAL**
+
+    :param style_sheet_id:
+    :param selector_text:
+    :returns: 
+    '''
+    params: T_JSON_DICT = dict()
+    params['styleSheetId'] = style_sheet_id.to_json()
+    params['selectorText'] = selector_text
+    cmd_dict: T_JSON_DICT = {
+        'method': 'CSS.getLocationForSelector',
+        'params': params,
+    }
+    json = yield cmd_dict
+    return [SourceRange.from_json(i) for i in json['ranges']]
+
+
 def track_computed_style_updates(
         properties_to_track: typing.List[CSSComputedStyleProperty]
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
@@ -1634,6 +1799,31 @@ def set_effective_property_value_for_node(
         'params': params,
     }
     json = yield cmd_dict
+
+
+def set_property_rule_property_name(
+        style_sheet_id: StyleSheetId,
+        range_: SourceRange,
+        property_name: str
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,Value]:
+    '''
+    Modifies the property rule property name.
+
+    :param style_sheet_id:
+    :param range_:
+    :param property_name:
+    :returns: The resulting key text after modification.
+    '''
+    params: T_JSON_DICT = dict()
+    params['styleSheetId'] = style_sheet_id.to_json()
+    params['range'] = range_.to_json()
+    params['propertyName'] = property_name
+    cmd_dict: T_JSON_DICT = {
+        'method': 'CSS.setPropertyRulePropertyName',
+        'params': params,
+    }
+    json = yield cmd_dict
+    return Value.from_json(json['propertyName'])
 
 
 def set_keyframe_key(
@@ -1815,16 +2005,20 @@ def set_style_sheet_text(
 
 
 def set_style_texts(
-        edits: typing.List[StyleDeclarationEdit]
+        edits: typing.List[StyleDeclarationEdit],
+        node_for_property_syntax_validation: typing.Optional[dom.NodeId] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.List[CSSStyle]]:
     '''
     Applies specified style edits one after another in the given order.
 
     :param edits:
+    :param node_for_property_syntax_validation: **(EXPERIMENTAL)** *(Optional)* NodeId for the DOM node in whose context custom property declarations for registered properties should be validated. If omitted, declarations in the new rule text can only be validated statically, which may produce incorrect results if the declaration contains a var() for example.
     :returns: The resulting styles after modification.
     '''
     params: T_JSON_DICT = dict()
     params['edits'] = [i.to_json() for i in edits]
+    if node_for_property_syntax_validation is not None:
+        params['nodeForPropertySyntaxValidation'] = node_for_property_syntax_validation.to_json()
     cmd_dict: T_JSON_DICT = {
         'method': 'CSS.setStyleTexts',
         'params': params,

@@ -775,8 +775,30 @@ def set_async_call_stack_depth(
     json = yield cmd_dict
 
 
+def set_blackbox_execution_contexts(
+        unique_ids: typing.List[str]
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Replace previous blackbox execution contexts with passed ones. Forces backend to skip
+    stepping/pausing in scripts in these execution contexts. VM will try to leave blackboxed script by
+    performing 'step in' several times, finally resorting to 'step out' if unsuccessful.
+
+    **EXPERIMENTAL**
+
+    :param unique_ids: Array of execution context unique ids for the debugger to ignore.
+    '''
+    params: T_JSON_DICT = dict()
+    params['uniqueIds'] = [i for i in unique_ids]
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Debugger.setBlackboxExecutionContexts',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
 def set_blackbox_patterns(
-        patterns: typing.List[str]
+        patterns: typing.List[str],
+        skip_anonymous: typing.Optional[bool] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
     '''
     Replace previous blackbox patterns with passed ones. Forces backend to skip stepping/pausing in
@@ -786,9 +808,12 @@ def set_blackbox_patterns(
     **EXPERIMENTAL**
 
     :param patterns: Array of regexps that will be used to check script url for blackbox state.
+    :param skip_anonymous: *(Optional)* If true, also ignore scripts with no source url.
     '''
     params: T_JSON_DICT = dict()
     params['patterns'] = [i for i in patterns]
+    if skip_anonymous is not None:
+        params['skipAnonymous'] = skip_anonymous
     cmd_dict: T_JSON_DICT = {
         'method': 'Debugger.setBlackboxPatterns',
         'params': params,
@@ -1315,8 +1340,8 @@ class ScriptParsed:
     code_offset: typing.Optional[int]
     #: The language of the script.
     script_language: typing.Optional[ScriptLanguage]
-    #: If the scriptLanguage is WebASsembly, the source of debug symbols for the module.
-    debug_symbols: typing.Optional[DebugSymbols]
+    #: If the scriptLanguage is WebAssembly, the source of debug symbols for the module.
+    debug_symbols: typing.Optional[typing.List[DebugSymbols]]
     #: The name the embedder supplied for this script.
     embedder_name: typing.Optional[str]
 
@@ -1340,6 +1365,6 @@ class ScriptParsed:
             stack_trace=runtime.StackTrace.from_json(json['stackTrace']) if json.get('stackTrace', None) is not None else None,
             code_offset=int(json['codeOffset']) if json.get('codeOffset', None) is not None else None,
             script_language=ScriptLanguage.from_json(json['scriptLanguage']) if json.get('scriptLanguage', None) is not None else None,
-            debug_symbols=DebugSymbols.from_json(json['debugSymbols']) if json.get('debugSymbols', None) is not None else None,
+            debug_symbols=[DebugSymbols.from_json(i) for i in json['debugSymbols']] if json.get('debugSymbols', None) is not None else None,
             embedder_name=str(json['embedderName']) if json.get('embedderName', None) is not None else None
         )

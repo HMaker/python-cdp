@@ -47,6 +47,7 @@ class SessionID(str):
 class TargetInfo:
     target_id: TargetID
 
+    #: List of types: https://source.chromium.org/chromium/chromium/src/+/main:content/browser/devtools/devtools_agent_host_impl.cc?ss=chromium&q=f:devtools%20-f:out%20%22::kTypeTab%5B%5D%22
     type_: str
 
     title: str
@@ -68,7 +69,7 @@ class TargetInfo:
     browser_context_id: typing.Optional[browser.BrowserContextID] = None
 
     #: Provides additional details for specific target types. For example, for
-    #: the type of "page", this may be set to "portal" or "prerender".
+    #: the type of "page", this may be set to "prerender".
     subtype: typing.Optional[str] = None
 
     def to_json(self) -> T_JSON_DICT:
@@ -110,7 +111,7 @@ class FilterEntry:
     '''
     A filter used by target query/discovery/auto-attach operations.
     '''
-    #: If set, causes exclusion of mathcing targets from the list.
+    #: If set, causes exclusion of matching targets from the list.
     exclude: typing.Optional[bool] = None
 
     #: If not present, matches any type.
@@ -256,7 +257,7 @@ def expose_dev_tools_protocol(
 
     Injected object will be available as ``window[bindingName]``.
 
-    The object has the follwing API:
+    The object has the following API:
     - ``binding.send(json)`` - a method to send messages over the remote debugging protocol
     - ``binding.onmessage = json => handleMessage(json)`` - a callback that will be called for the protocol notifications and command responses.
 
@@ -286,12 +287,10 @@ def create_browser_context(
     Creates a new empty BrowserContext. Similar to an incognito profile but you can have more than
     one.
 
-    **EXPERIMENTAL**
-
-    :param dispose_on_detach: *(Optional)* If specified, disposes this context when debugging session disconnects.
-    :param proxy_server: *(Optional)* Proxy server, similar to the one passed to --proxy-server
-    :param proxy_bypass_list: *(Optional)* Proxy bypass list, similar to the one passed to --proxy-bypass-list
-    :param origins_with_universal_network_access: *(Optional)* An optional list of origins to grant unlimited cross-origin access to. Parts of the URL other than those constituting origin are ignored.
+    :param dispose_on_detach: **(EXPERIMENTAL)** *(Optional)* If specified, disposes this context when debugging session disconnects.
+    :param proxy_server: **(EXPERIMENTAL)** *(Optional)* Proxy server, similar to the one passed to --proxy-server
+    :param proxy_bypass_list: **(EXPERIMENTAL)** *(Optional)* Proxy bypass list, similar to the one passed to --proxy-bypass-list
+    :param origins_with_universal_network_access: **(EXPERIMENTAL)** *(Optional)* An optional list of origins to grant unlimited cross-origin access to. Parts of the URL other than those constituting origin are ignored.
     :returns: The id of the context created.
     '''
     params: T_JSON_DICT = dict()
@@ -314,8 +313,6 @@ def create_browser_context(
 def get_browser_contexts() -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.List[browser.BrowserContextID]]:
     '''
     Returns all browser contexts created with ``Target.createBrowserContext`` method.
-
-    **EXPERIMENTAL**
 
     :returns: An array of browser context ids.
     '''
@@ -401,8 +398,6 @@ def dispose_browser_context(
     '''
     Deletes a BrowserContext. All the belonging pages will be closed without calling their
     beforeunload hooks.
-
-    **EXPERIMENTAL**
 
     :param browser_context_id:
     '''
@@ -500,11 +495,9 @@ def set_auto_attach(
     This also clears all targets added by ``autoAttachRelated`` from the list of targets to watch
     for creation of related targets.
 
-    **EXPERIMENTAL**
-
     :param auto_attach: Whether to auto-attach to related targets.
     :param wait_for_debugger_on_start: Whether to pause new targets when attaching to them. Use ```Runtime.runIfWaitingForDebugger``` to run paused targets.
-    :param flatten: *(Optional)* Enables "flat" access to the session via specifying sessionId attribute in the commands. We plan to make this the default, deprecate non-flattened mode, and eventually retire it. See crbug.com/991325.
+    :param flatten: **(EXPERIMENTAL)** *(Optional)* Enables "flat" access to the session via specifying sessionId attribute in the commands. We plan to make this the default, deprecate non-flattened mode, and eventually retire it. See crbug.com/991325.
     :param filter_: **(EXPERIMENTAL)** *(Optional)* Only targets matching filter will be attached.
     '''
     params: T_JSON_DICT = dict()
