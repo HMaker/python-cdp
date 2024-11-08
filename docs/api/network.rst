@@ -148,6 +148,16 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: ServiceWorkerRouterSource
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: ServiceWorkerRouterInfo
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: Response
       :members:
       :undoc-members:
@@ -193,12 +203,22 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: CookieExemptionReason
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: BlockedSetCookieWithReason
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
 
-.. autoclass:: BlockedCookieWithReason
+.. autoclass:: ExemptedSetCookieWithReason
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AssociatedCookie
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
@@ -419,6 +439,8 @@ to. For more information, see
 
 .. autofunction:: set_user_agent_override
 
+.. autofunction:: stream_resource_content
+
 .. autofunction:: take_response_body_for_interception_as_stream
 
 Events
@@ -534,6 +556,11 @@ you use the event's attributes.
       :exclude-members: from_json, to_json
 
 .. autoclass:: ResponseReceivedExtraInfo
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: ResponseReceivedEarlyHints
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json

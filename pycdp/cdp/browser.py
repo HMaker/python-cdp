@@ -106,6 +106,7 @@ class PermissionType(enum.Enum):
     AUDIO_CAPTURE = "audioCapture"
     BACKGROUND_SYNC = "backgroundSync"
     BACKGROUND_FETCH = "backgroundFetch"
+    CAPTURED_SURFACE_CONTROL = "capturedSurfaceControl"
     CLIPBOARD_READ_WRITE = "clipboardReadWrite"
     CLIPBOARD_SANITIZED_WRITE = "clipboardSanitizedWrite"
     DISPLAY_CAPTURE = "displayCapture"
@@ -123,6 +124,7 @@ class PermissionType(enum.Enum):
     PROTECTED_MEDIA_IDENTIFIER = "protectedMediaIdentifier"
     SENSORS = "sensors"
     STORAGE_ACCESS = "storageAccess"
+    SPEAKER_SELECTION = "speakerSelection"
     TOP_LEVEL_STORAGE_ACCESS = "topLevelStorageAccess"
     VIDEO_CAPTURE = "videoCapture"
     VIDEO_CAPTURE_PAN_TILT_ZOOM = "videoCapturePanTiltZoom"
@@ -155,7 +157,7 @@ class PermissionSetting(enum.Enum):
 class PermissionDescriptor:
     '''
     Definition of PermissionDescriptor defined in the Permissions API:
-    https://w3c.github.io/permissions/#dictdef-permissiondescriptor.
+    https://w3c.github.io/permissions/#dom-permissiondescriptor.
     '''
     #: Name of permission.
     #: See https://cs.chromium.org/chromium/src/third_party/blink/renderer/modules/permissions/permission_descriptor.idl for valid permission names.
@@ -341,8 +343,6 @@ def reset_permissions(
     '''
     Reset all permission management for all origins.
 
-    **EXPERIMENTAL**
-
     :param browser_context_id: *(Optional)* BrowserContext to reset permissions. When omitted, default browser context is used.
     '''
     params: T_JSON_DICT = dict()
@@ -366,7 +366,7 @@ def set_download_behavior(
 
     **EXPERIMENTAL**
 
-    :param behavior: Whether to allow all or deny all download requests, or use default Chrome behavior if available (otherwise deny). ``allowAndName`` allows download and names files according to their dowmload guids.
+    :param behavior: Whether to allow all or deny all download requests, or use default Chrome behavior if available (otherwise deny). ``allowAndName`` allows download and names files according to their download guids.
     :param browser_context_id: *(Optional)* BrowserContext to set download behavior. When omitted, default browser context is used.
     :param download_path: *(Optional)* The default path to save downloaded files to. This is required if behavior is set to 'allow' or 'allowAndName'.
     :param events_enabled: *(Optional)* Whether to emit download events (defaults to false).

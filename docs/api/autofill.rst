@@ -29,7 +29,27 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: AddressFields
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: Address
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: AddressUI
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: FillingStrategy
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: FilledField
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json
@@ -46,6 +66,10 @@ commands, and ``z`` is the return type you should pay attention
 to. For more information, see
 :ref:`Getting Started: Commands <getting-started-commands>`.
 
+.. autofunction:: disable
+
+.. autofunction:: enable
+
 .. autofunction:: set_addresses
 
 .. autofunction:: trigger
@@ -53,4 +77,11 @@ to. For more information, see
 Events
 ------
 
-*There are no events in this module.*
+Generally, you do not need to instantiate CDP events
+yourself. Instead, the API creates events for you and then
+you use the event's attributes.
+
+.. autoclass:: AddressFormFilled
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
