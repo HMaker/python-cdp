@@ -199,6 +199,15 @@ class Credential:
     #: defaultBackupState value.
     backup_state: typing.Optional[bool] = None
 
+    #: The credential's user.name property. Equivalent to empty if not set.
+    #: https://w3c.github.io/webauthn/#dom-publickeycredentialentity-name
+    user_name: typing.Optional[str] = None
+
+    #: The credential's user.displayName property. Equivalent to empty if
+    #: not set.
+    #: https://w3c.github.io/webauthn/#dom-publickeycredentialuserentity-displayname
+    user_display_name: typing.Optional[str] = None
+
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
         json['credentialId'] = self.credential_id
@@ -215,6 +224,10 @@ class Credential:
             json['backupEligibility'] = self.backup_eligibility
         if self.backup_state is not None:
             json['backupState'] = self.backup_state
+        if self.user_name is not None:
+            json['userName'] = self.user_name
+        if self.user_display_name is not None:
+            json['userDisplayName'] = self.user_display_name
         return json
 
     @classmethod
@@ -229,6 +242,8 @@ class Credential:
             large_blob=str(json['largeBlob']) if json.get('largeBlob', None) is not None else None,
             backup_eligibility=bool(json['backupEligibility']) if json.get('backupEligibility', None) is not None else None,
             backup_state=bool(json['backupState']) if json.get('backupState', None) is not None else None,
+            user_name=str(json['userName']) if json.get('userName', None) is not None else None,
+            user_display_name=str(json['userDisplayName']) if json.get('userDisplayName', None) is not None else None,
         )
 
 
@@ -507,6 +522,42 @@ class CredentialAdded:
 
     @classmethod
     def from_json(cls, json: T_JSON_DICT) -> CredentialAdded:
+        return cls(
+            authenticator_id=AuthenticatorId.from_json(json['authenticatorId']),
+            credential=Credential.from_json(json['credential'])
+        )
+
+
+@event_class('WebAuthn.credentialDeleted')
+@dataclass
+class CredentialDeleted:
+    '''
+    Triggered when a credential is deleted, e.g. through
+    PublicKeyCredential.signalUnknownCredential().
+    '''
+    authenticator_id: AuthenticatorId
+    credential_id: str
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> CredentialDeleted:
+        return cls(
+            authenticator_id=AuthenticatorId.from_json(json['authenticatorId']),
+            credential_id=str(json['credentialId'])
+        )
+
+
+@event_class('WebAuthn.credentialUpdated')
+@dataclass
+class CredentialUpdated:
+    '''
+    Triggered when a credential is updated, e.g. through
+    PublicKeyCredential.signalCurrentUserDetails().
+    '''
+    authenticator_id: AuthenticatorId
+    credential: Credential
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> CredentialUpdated:
         return cls(
             authenticator_id=AuthenticatorId.from_json(json['authenticatorId']),
             credential=Credential.from_json(json['credential'])

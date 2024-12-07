@@ -658,6 +658,90 @@ class AttributionReportingTriggerDataMatching(enum.Enum):
 
 
 @dataclass
+class AttributionReportingAggregatableDebugReportingData:
+    key_piece: UnsignedInt128AsBase16
+
+    #: number instead of integer because not all uint32 can be represented by
+    #: int
+    value: float
+
+    types: typing.List[str]
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['keyPiece'] = self.key_piece.to_json()
+        json['value'] = self.value
+        json['types'] = [i for i in self.types]
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> AttributionReportingAggregatableDebugReportingData:
+        return cls(
+            key_piece=UnsignedInt128AsBase16.from_json(json['keyPiece']),
+            value=float(json['value']),
+            types=[str(i) for i in json['types']],
+        )
+
+
+@dataclass
+class AttributionReportingAggregatableDebugReportingConfig:
+    key_piece: UnsignedInt128AsBase16
+
+    debug_data: typing.List[AttributionReportingAggregatableDebugReportingData]
+
+    #: number instead of integer because not all uint32 can be represented by
+    #: int, only present for source registrations
+    budget: typing.Optional[float] = None
+
+    aggregation_coordinator_origin: typing.Optional[str] = None
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['keyPiece'] = self.key_piece.to_json()
+        json['debugData'] = [i.to_json() for i in self.debug_data]
+        if self.budget is not None:
+            json['budget'] = self.budget
+        if self.aggregation_coordinator_origin is not None:
+            json['aggregationCoordinatorOrigin'] = self.aggregation_coordinator_origin
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> AttributionReportingAggregatableDebugReportingConfig:
+        return cls(
+            key_piece=UnsignedInt128AsBase16.from_json(json['keyPiece']),
+            debug_data=[AttributionReportingAggregatableDebugReportingData.from_json(i) for i in json['debugData']],
+            budget=float(json['budget']) if json.get('budget', None) is not None else None,
+            aggregation_coordinator_origin=str(json['aggregationCoordinatorOrigin']) if json.get('aggregationCoordinatorOrigin', None) is not None else None,
+        )
+
+
+@dataclass
+class AttributionScopesData:
+    values: typing.List[str]
+
+    #: number instead of integer because not all uint32 can be represented by
+    #: int
+    limit: float
+
+    max_event_states: float
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['values'] = [i for i in self.values]
+        json['limit'] = self.limit
+        json['maxEventStates'] = self.max_event_states
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> AttributionScopesData:
+        return cls(
+            values=[str(i) for i in json['values']],
+            limit=float(json['limit']),
+            max_event_states=float(json['maxEventStates']),
+        )
+
+
+@dataclass
 class AttributionReportingSourceRegistration:
     time: network.TimeSinceEpoch
 
@@ -687,7 +771,15 @@ class AttributionReportingSourceRegistration:
 
     trigger_data_matching: AttributionReportingTriggerDataMatching
 
+    destination_limit_priority: SignedInt64AsBase10
+
+    aggregatable_debug_reporting_config: AttributionReportingAggregatableDebugReportingConfig
+
+    max_event_level_reports: int
+
     debug_key: typing.Optional[UnsignedInt64AsBase10] = None
+
+    scopes_data: typing.Optional[AttributionScopesData] = None
 
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
@@ -704,8 +796,13 @@ class AttributionReportingSourceRegistration:
         json['filterData'] = [i.to_json() for i in self.filter_data]
         json['aggregationKeys'] = [i.to_json() for i in self.aggregation_keys]
         json['triggerDataMatching'] = self.trigger_data_matching.to_json()
+        json['destinationLimitPriority'] = self.destination_limit_priority.to_json()
+        json['aggregatableDebugReportingConfig'] = self.aggregatable_debug_reporting_config.to_json()
+        json['maxEventLevelReports'] = self.max_event_level_reports
         if self.debug_key is not None:
             json['debugKey'] = self.debug_key.to_json()
+        if self.scopes_data is not None:
+            json['scopesData'] = self.scopes_data.to_json()
         return json
 
     @classmethod
@@ -724,7 +821,11 @@ class AttributionReportingSourceRegistration:
             filter_data=[AttributionReportingFilterDataEntry.from_json(i) for i in json['filterData']],
             aggregation_keys=[AttributionReportingAggregationKeysEntry.from_json(i) for i in json['aggregationKeys']],
             trigger_data_matching=AttributionReportingTriggerDataMatching.from_json(json['triggerDataMatching']),
+            destination_limit_priority=SignedInt64AsBase10.from_json(json['destinationLimitPriority']),
+            aggregatable_debug_reporting_config=AttributionReportingAggregatableDebugReportingConfig.from_json(json['aggregatableDebugReportingConfig']),
+            max_event_level_reports=int(json['maxEventLevelReports']),
             debug_key=UnsignedInt64AsBase10.from_json(json['debugKey']) if json.get('debugKey', None) is not None else None,
+            scopes_data=AttributionScopesData.from_json(json['scopesData']) if json.get('scopesData', None) is not None else None,
         )
 
 
@@ -741,7 +842,10 @@ class AttributionReportingSourceRegistrationResult(enum.Enum):
     DESTINATION_BOTH_LIMITS_REACHED = "destinationBothLimitsReached"
     REPORTING_ORIGINS_PER_SITE_LIMIT_REACHED = "reportingOriginsPerSiteLimitReached"
     EXCEEDS_MAX_CHANNEL_CAPACITY = "exceedsMaxChannelCapacity"
+    EXCEEDS_MAX_SCOPES_CHANNEL_CAPACITY = "exceedsMaxScopesChannelCapacity"
     EXCEEDS_MAX_TRIGGER_STATE_CARDINALITY = "exceedsMaxTriggerStateCardinality"
+    EXCEEDS_MAX_EVENT_STATES_LIMIT = "exceedsMaxEventStatesLimit"
+    DESTINATION_PER_DAY_REPORTING_LIMIT_REACHED = "destinationPerDayReportingLimitReached"
 
     def to_json(self) -> str:
         return self.value
@@ -771,10 +875,13 @@ class AttributionReportingAggregatableValueDictEntry:
     #: int
     value: float
 
+    filtering_id: UnsignedInt64AsBase10
+
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
         json['key'] = self.key
         json['value'] = self.value
+        json['filteringId'] = self.filtering_id.to_json()
         return json
 
     @classmethod
@@ -782,6 +889,7 @@ class AttributionReportingAggregatableValueDictEntry:
         return cls(
             key=str(json['key']),
             value=float(json['value']),
+            filtering_id=UnsignedInt64AsBase10.from_json(json['filteringId']),
         )
 
 
@@ -891,9 +999,15 @@ class AttributionReportingTriggerRegistration:
 
     aggregatable_values: typing.List[AttributionReportingAggregatableValueEntry]
 
+    aggregatable_filtering_id_max_bytes: int
+
     debug_reporting: bool
 
     source_registration_time_config: AttributionReportingSourceRegistrationTimeConfig
+
+    aggregatable_debug_reporting_config: AttributionReportingAggregatableDebugReportingConfig
+
+    scopes: typing.List[str]
 
     debug_key: typing.Optional[UnsignedInt64AsBase10] = None
 
@@ -908,8 +1022,11 @@ class AttributionReportingTriggerRegistration:
         json['eventTriggerData'] = [i.to_json() for i in self.event_trigger_data]
         json['aggregatableTriggerData'] = [i.to_json() for i in self.aggregatable_trigger_data]
         json['aggregatableValues'] = [i.to_json() for i in self.aggregatable_values]
+        json['aggregatableFilteringIdMaxBytes'] = self.aggregatable_filtering_id_max_bytes
         json['debugReporting'] = self.debug_reporting
         json['sourceRegistrationTimeConfig'] = self.source_registration_time_config.to_json()
+        json['aggregatableDebugReportingConfig'] = self.aggregatable_debug_reporting_config.to_json()
+        json['scopes'] = [i for i in self.scopes]
         if self.debug_key is not None:
             json['debugKey'] = self.debug_key.to_json()
         if self.aggregation_coordinator_origin is not None:
@@ -926,8 +1043,11 @@ class AttributionReportingTriggerRegistration:
             event_trigger_data=[AttributionReportingEventTriggerData.from_json(i) for i in json['eventTriggerData']],
             aggregatable_trigger_data=[AttributionReportingAggregatableTriggerData.from_json(i) for i in json['aggregatableTriggerData']],
             aggregatable_values=[AttributionReportingAggregatableValueEntry.from_json(i) for i in json['aggregatableValues']],
+            aggregatable_filtering_id_max_bytes=int(json['aggregatableFilteringIdMaxBytes']),
             debug_reporting=bool(json['debugReporting']),
             source_registration_time_config=AttributionReportingSourceRegistrationTimeConfig.from_json(json['sourceRegistrationTimeConfig']),
+            aggregatable_debug_reporting_config=AttributionReportingAggregatableDebugReportingConfig.from_json(json['aggregatableDebugReportingConfig']),
+            scopes=[str(i) for i in json['scopes']],
             debug_key=UnsignedInt64AsBase10.from_json(json['debugKey']) if json.get('debugKey', None) is not None else None,
             aggregation_coordinator_origin=str(json['aggregationCoordinatorOrigin']) if json.get('aggregationCoordinatorOrigin', None) is not None else None,
             trigger_context_id=str(json['triggerContextId']) if json.get('triggerContextId', None) is not None else None,
@@ -972,6 +1092,7 @@ class AttributionReportingAggregatableResult(enum.Enum):
     EXCESSIVE_REPORTING_ORIGINS = "excessiveReportingOrigins"
     NO_HISTOGRAMS = "noHistograms"
     INSUFFICIENT_BUDGET = "insufficientBudget"
+    INSUFFICIENT_NAMED_BUDGET = "insufficientNamedBudget"
     NO_MATCHING_SOURCE_FILTER_DATA = "noMatchingSourceFilterData"
     NOT_REGISTERED = "notRegistered"
     PROHIBITED_BY_BROWSER_POLICY = "prohibitedByBrowserPolicy"

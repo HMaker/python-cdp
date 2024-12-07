@@ -29,6 +29,11 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: DisplayMode
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 Commands
 --------
 
@@ -40,6 +45,8 @@ this library, types ``x`` and ``y`` are the same for all
 commands, and ``z`` is the return type you should pay attention
 to. For more information, see
 :ref:`Getting Started: Commands <getting-started-commands>`.
+
+.. autofunction:: change_app_user_settings
 
 .. autofunction:: get_os_app_state
 

@@ -188,6 +188,11 @@ arguments to other commands.
       :undoc-members:
       :exclude-members: from_json, to_json
 
+.. autoclass:: CookiePartitionKey
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
 .. autoclass:: Cookie
       :members:
       :undoc-members:
@@ -566,6 +571,11 @@ you use the event's attributes.
       :exclude-members: from_json, to_json
 
 .. autoclass:: TrustTokenOperationDone
+      :members:
+      :undoc-members:
+      :exclude-members: from_json, to_json
+
+.. autoclass:: PolicyUpdated
       :members:
       :undoc-members:
       :exclude-members: from_json, to_json

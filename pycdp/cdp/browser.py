@@ -102,18 +102,21 @@ class Bounds:
 
 
 class PermissionType(enum.Enum):
-    ACCESSIBILITY_EVENTS = "accessibilityEvents"
+    AR = "ar"
     AUDIO_CAPTURE = "audioCapture"
-    BACKGROUND_SYNC = "backgroundSync"
+    AUTOMATIC_FULLSCREEN = "automaticFullscreen"
     BACKGROUND_FETCH = "backgroundFetch"
+    BACKGROUND_SYNC = "backgroundSync"
+    CAMERA_PAN_TILT_ZOOM = "cameraPanTiltZoom"
     CAPTURED_SURFACE_CONTROL = "capturedSurfaceControl"
     CLIPBOARD_READ_WRITE = "clipboardReadWrite"
     CLIPBOARD_SANITIZED_WRITE = "clipboardSanitizedWrite"
     DISPLAY_CAPTURE = "displayCapture"
     DURABLE_STORAGE = "durableStorage"
-    FLASH = "flash"
     GEOLOCATION = "geolocation"
+    HAND_TRACKING = "handTracking"
     IDLE_DETECTION = "idleDetection"
+    KEYBOARD_LOCK = "keyboardLock"
     LOCAL_FONTS = "localFonts"
     MIDI = "midi"
     MIDI_SYSEX = "midiSysex"
@@ -121,15 +124,19 @@ class PermissionType(enum.Enum):
     NOTIFICATIONS = "notifications"
     PAYMENT_HANDLER = "paymentHandler"
     PERIODIC_BACKGROUND_SYNC = "periodicBackgroundSync"
+    POINTER_LOCK = "pointerLock"
     PROTECTED_MEDIA_IDENTIFIER = "protectedMediaIdentifier"
     SENSORS = "sensors"
-    STORAGE_ACCESS = "storageAccess"
+    SMART_CARD = "smartCard"
     SPEAKER_SELECTION = "speakerSelection"
+    STORAGE_ACCESS = "storageAccess"
     TOP_LEVEL_STORAGE_ACCESS = "topLevelStorageAccess"
     VIDEO_CAPTURE = "videoCapture"
-    VIDEO_CAPTURE_PAN_TILT_ZOOM = "videoCapturePanTiltZoom"
+    VR = "vr"
     WAKE_LOCK_SCREEN = "wakeLockScreen"
     WAKE_LOCK_SYSTEM = "wakeLockSystem"
+    WEB_APP_INSTALLATION = "webAppInstallation"
+    WEB_PRINTING = "webPrinting"
     WINDOW_MANAGEMENT = "windowManagement"
 
     def to_json(self) -> str:
@@ -173,6 +180,9 @@ class PermissionDescriptor:
     #: For "clipboard" permission, may specify allowWithoutSanitization.
     allow_without_sanitization: typing.Optional[bool] = None
 
+    #: For "fullscreen" permission, must specify allowWithoutGesture:true.
+    allow_without_gesture: typing.Optional[bool] = None
+
     #: For "camera" permission, may specify panTiltZoom.
     pan_tilt_zoom: typing.Optional[bool] = None
 
@@ -185,6 +195,8 @@ class PermissionDescriptor:
             json['userVisibleOnly'] = self.user_visible_only
         if self.allow_without_sanitization is not None:
             json['allowWithoutSanitization'] = self.allow_without_sanitization
+        if self.allow_without_gesture is not None:
+            json['allowWithoutGesture'] = self.allow_without_gesture
         if self.pan_tilt_zoom is not None:
             json['panTiltZoom'] = self.pan_tilt_zoom
         return json
@@ -196,6 +208,7 @@ class PermissionDescriptor:
             sysex=bool(json['sysex']) if json.get('sysex', None) is not None else None,
             user_visible_only=bool(json['userVisibleOnly']) if json.get('userVisibleOnly', None) is not None else None,
             allow_without_sanitization=bool(json['allowWithoutSanitization']) if json.get('allowWithoutSanitization', None) is not None else None,
+            allow_without_gesture=bool(json['allowWithoutGesture']) if json.get('allowWithoutGesture', None) is not None else None,
             pan_tilt_zoom=bool(json['panTiltZoom']) if json.get('panTiltZoom', None) is not None else None,
         )
 

@@ -69,7 +69,7 @@ class TargetInfo:
     browser_context_id: typing.Optional[browser.BrowserContextID] = None
 
     #: Provides additional details for specific target types. For example, for
-    #: the type of "page", this may be set to "portal" or "prerender".
+    #: the type of "page", this may be set to "prerender".
     subtype: typing.Optional[str] = None
 
     def to_json(self) -> T_JSON_DICT:

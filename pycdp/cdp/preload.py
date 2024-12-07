@@ -289,6 +289,11 @@ class PrerenderFinalStatus(enum.Enum):
     JAVA_SCRIPT_INTERFACE_ADDED = "JavaScriptInterfaceAdded"
     JAVA_SCRIPT_INTERFACE_REMOVED = "JavaScriptInterfaceRemoved"
     ALL_PRERENDERING_CANCELED = "AllPrerenderingCanceled"
+    WINDOW_CLOSED = "WindowClosed"
+    SLOW_NETWORK = "SlowNetwork"
+    OTHER_PRERENDERED_PAGE_ACTIVATED = "OtherPrerenderedPageActivated"
+    V8_OPTIMIZER_DISABLED = "V8OptimizerDisabled"
+    PRERENDER_FAILED_DURING_PREFETCH = "PrerenderFailedDuringPrefetch"
 
     def to_json(self) -> str:
         return self.value
@@ -329,7 +334,6 @@ class PrefetchStatus(enum.Enum):
     PREFETCH_FAILED_MIME_NOT_SUPPORTED = "PrefetchFailedMIMENotSupported"
     PREFETCH_FAILED_NET_ERROR = "PrefetchFailedNetError"
     PREFETCH_FAILED_NON2_XX = "PrefetchFailedNon2XX"
-    PREFETCH_FAILED_PER_PAGE_LIMIT_EXCEEDED = "PrefetchFailedPerPageLimitExceeded"
     PREFETCH_EVICTED_AFTER_CANDIDATE_REMOVED = "PrefetchEvictedAfterCandidateRemoved"
     PREFETCH_EVICTED_FOR_NEWER_PREFETCH = "PrefetchEvictedForNewerPrefetch"
     PREFETCH_HELDBACK = "PrefetchHeldback"

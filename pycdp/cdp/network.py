@@ -68,7 +68,9 @@ class LoaderId(str):
 
 class RequestId(str):
     '''
-    Unique request identifier.
+    Unique network request identifier.
+    Note that this does not identify individual HTTP requests that are part of
+    a network request.
     '''
     def to_json(self) -> str:
         return self
@@ -676,7 +678,10 @@ class BlockedReason(enum.Enum):
     COOP_SANDBOXED_IFRAME_CANNOT_NAVIGATE_TO_COOP_PAGE = "coop-sandboxed-iframe-cannot-navigate-to-coop-page"
     CORP_NOT_SAME_ORIGIN = "corp-not-same-origin"
     CORP_NOT_SAME_ORIGIN_AFTER_DEFAULTED_TO_SAME_ORIGIN_BY_COEP = "corp-not-same-origin-after-defaulted-to-same-origin-by-coep"
+    CORP_NOT_SAME_ORIGIN_AFTER_DEFAULTED_TO_SAME_ORIGIN_BY_DIP = "corp-not-same-origin-after-defaulted-to-same-origin-by-dip"
+    CORP_NOT_SAME_ORIGIN_AFTER_DEFAULTED_TO_SAME_ORIGIN_BY_COEP_AND_DIP = "corp-not-same-origin-after-defaulted-to-same-origin-by-coep-and-dip"
     CORP_NOT_SAME_SITE = "corp-not-same-site"
+    SRI_MESSAGE_SIGNATURE_MISMATCH = "sri-message-signature-mismatch"
 
     def to_json(self) -> str:
         return self.value
@@ -1202,6 +1207,7 @@ class Initiator:
     type_: str
 
     #: Initiator JavaScript stack trace, set for Script only.
+    #: Requires the Debugger domain to be enabled.
     stack: typing.Optional[runtime.StackTrace] = None
 
     #: Initiator URL, set for Parser type or for Script type (when script is importing module) or for SignedExchange type.
@@ -1242,6 +1248,33 @@ class Initiator:
             line_number=float(json['lineNumber']) if json.get('lineNumber', None) is not None else None,
             column_number=float(json['columnNumber']) if json.get('columnNumber', None) is not None else None,
             request_id=RequestId.from_json(json['requestId']) if json.get('requestId', None) is not None else None,
+        )
+
+
+@dataclass
+class CookiePartitionKey:
+    '''
+    cookiePartitionKey object
+    The representation of the components of the key that are created by the cookiePartitionKey class contained in net/cookies/cookie_partition_key.h.
+    '''
+    #: The site of the top-level URL the browser was visiting at the start
+    #: of the request to the endpoint that set the cookie.
+    top_level_site: str
+
+    #: Indicates if the cookie has any ancestors that are cross-site to the topLevelSite.
+    has_cross_site_ancestor: bool
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['topLevelSite'] = self.top_level_site
+        json['hasCrossSiteAncestor'] = self.has_cross_site_ancestor
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> CookiePartitionKey:
+        return cls(
+            top_level_site=str(json['topLevelSite']),
+            has_cross_site_ancestor=bool(json['hasCrossSiteAncestor']),
         )
 
 
@@ -1294,9 +1327,8 @@ class Cookie:
     #: Cookie SameSite type.
     same_site: typing.Optional[CookieSameSite] = None
 
-    #: Cookie partition key. The site of the top-level URL the browser was visiting at the start
-    #: of the request to the endpoint that set the cookie.
-    partition_key: typing.Optional[str] = None
+    #: Cookie partition key.
+    partition_key: typing.Optional[CookiePartitionKey] = None
 
     #: True if cookie partition key is opaque.
     partition_key_opaque: typing.Optional[bool] = None
@@ -1320,7 +1352,7 @@ class Cookie:
         if self.same_site is not None:
             json['sameSite'] = self.same_site.to_json()
         if self.partition_key is not None:
-            json['partitionKey'] = self.partition_key
+            json['partitionKey'] = self.partition_key.to_json()
         if self.partition_key_opaque is not None:
             json['partitionKeyOpaque'] = self.partition_key_opaque
         return json
@@ -1342,7 +1374,7 @@ class Cookie:
             source_port=int(json['sourcePort']),
             expires=float(json['expires']) if json.get('expires', None) is not None else None,
             same_site=CookieSameSite.from_json(json['sameSite']) if json.get('sameSite', None) is not None else None,
-            partition_key=str(json['partitionKey']) if json.get('partitionKey', None) is not None else None,
+            partition_key=CookiePartitionKey.from_json(json['partitionKey']) if json.get('partitionKey', None) is not None else None,
             partition_key_opaque=bool(json['partitionKeyOpaque']) if json.get('partitionKeyOpaque', None) is not None else None,
         )
 
@@ -1402,6 +1434,8 @@ class CookieBlockedReason(enum.Enum):
     SCHEMEFUL_SAME_SITE_UNSPECIFIED_TREATED_AS_LAX = "SchemefulSameSiteUnspecifiedTreatedAsLax"
     SAME_PARTY_FROM_CROSS_PARTY_CONTEXT = "SamePartyFromCrossPartyContext"
     NAME_VALUE_PAIR_EXCEEDS_MAX_SIZE = "NameValuePairExceedsMaxSize"
+    PORT_MISMATCH = "PortMismatch"
+    SCHEME_MISMATCH = "SchemeMismatch"
 
     def to_json(self) -> str:
         return self.value
@@ -1419,11 +1453,11 @@ class CookieExemptionReason(enum.Enum):
     USER_SETTING = "UserSetting"
     TPCD_METADATA = "TPCDMetadata"
     TPCD_DEPRECATION_TRIAL = "TPCDDeprecationTrial"
+    TOP_LEVEL_TPCD_DEPRECATION_TRIAL = "TopLevelTPCDDeprecationTrial"
     TPCD_HEURISTICS = "TPCDHeuristics"
     ENTERPRISE_POLICY = "EnterprisePolicy"
     STORAGE_ACCESS = "StorageAccess"
     TOP_LEVEL_STORAGE_ACCESS = "TopLevelStorageAccess"
-    CORS_OPT_IN = "CorsOptIn"
     SCHEME = "Scheme"
 
     def to_json(self) -> str:
@@ -1579,10 +1613,8 @@ class CookieParam:
     #: This is a temporary ability and it will be removed in the future.
     source_port: typing.Optional[int] = None
 
-    #: Cookie partition key. The site of the top-level URL the browser was visiting at the start
-    #: of the request to the endpoint that set the cookie.
-    #: If not set, the cookie will be set as not partitioned.
-    partition_key: typing.Optional[str] = None
+    #: Cookie partition key. If not set, the cookie will be set as not partitioned.
+    partition_key: typing.Optional[CookiePartitionKey] = None
 
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
@@ -1611,7 +1643,7 @@ class CookieParam:
         if self.source_port is not None:
             json['sourcePort'] = self.source_port
         if self.partition_key is not None:
-            json['partitionKey'] = self.partition_key
+            json['partitionKey'] = self.partition_key.to_json()
         return json
 
     @classmethod
@@ -1630,7 +1662,7 @@ class CookieParam:
             same_party=bool(json['sameParty']) if json.get('sameParty', None) is not None else None,
             source_scheme=CookieSourceScheme.from_json(json['sourceScheme']) if json.get('sourceScheme', None) is not None else None,
             source_port=int(json['sourcePort']) if json.get('sourcePort', None) is not None else None,
-            partition_key=str(json['partitionKey']) if json.get('partitionKey', None) is not None else None,
+            partition_key=CookiePartitionKey.from_json(json['partitionKey']) if json.get('partitionKey', None) is not None else None,
         )
 
 
@@ -2046,6 +2078,7 @@ class CrossOriginOpenerPolicyValue(enum.Enum):
     UNSAFE_NONE = "UnsafeNone"
     SAME_ORIGIN_PLUS_COEP = "SameOriginPlusCoep"
     RESTRICT_PROPERTIES_PLUS_COEP = "RestrictPropertiesPlusCoep"
+    NOOPENER_ALLOW_POPUPS = "NoopenerAllowPopups"
 
     def to_json(self) -> str:
         return self.value
@@ -2528,7 +2561,7 @@ def delete_cookies(
         url: typing.Optional[str] = None,
         domain: typing.Optional[str] = None,
         path: typing.Optional[str] = None,
-        partition_key: typing.Optional[str] = None
+        partition_key: typing.Optional[CookiePartitionKey] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
     '''
     Deletes browser cookies with matching name and url or domain/path/partitionKey pair.
@@ -2537,7 +2570,7 @@ def delete_cookies(
     :param url: *(Optional)* If specified, deletes all the cookies with the given name where domain and path match provided URL.
     :param domain: *(Optional)* If specified, deletes only cookies with the exact domain.
     :param path: *(Optional)* If specified, deletes only cookies with the exact path.
-    :param partition_key: **(EXPERIMENTAL)** *(Optional)* If specified, deletes only cookies with the the given name and partitionKey where domain matches provided URL.
+    :param partition_key: **(EXPERIMENTAL)** *(Optional)* If specified, deletes only cookies with the the given name and partitionKey where all partition key attributes match the cookie partition key attribute.
     '''
     params: T_JSON_DICT = dict()
     params['name'] = name
@@ -2548,7 +2581,7 @@ def delete_cookies(
     if path is not None:
         params['path'] = path
     if partition_key is not None:
-        params['partitionKey'] = partition_key
+        params['partitionKey'] = partition_key.to_json()
     cmd_dict: T_JSON_DICT = {
         'method': 'Network.deleteCookies',
         'params': params,
@@ -2909,7 +2942,7 @@ def set_cookie(
         same_party: typing.Optional[bool] = None,
         source_scheme: typing.Optional[CookieSourceScheme] = None,
         source_port: typing.Optional[int] = None,
-        partition_key: typing.Optional[str] = None
+        partition_key: typing.Optional[CookiePartitionKey] = None
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,bool]:
     '''
     Sets a cookie with the given cookie data; may overwrite equivalent cookies if they exist.
@@ -2927,7 +2960,7 @@ def set_cookie(
     :param same_party: **(EXPERIMENTAL)** *(Optional)* True if cookie is SameParty.
     :param source_scheme: **(EXPERIMENTAL)** *(Optional)* Cookie source scheme type.
     :param source_port: **(EXPERIMENTAL)** *(Optional)* Cookie source port. Valid values are {-1, [1, 65535]}, -1 indicates an unspecified port. An unspecified port value allows protocol clients to emulate legacy cookie scope for the port. This is a temporary ability and it will be removed in the future.
-    :param partition_key: **(EXPERIMENTAL)** *(Optional)* Cookie partition key. The site of the top-level URL the browser was visiting at the start of the request to the endpoint that set the cookie. If not set, the cookie will be set as not partitioned.
+    :param partition_key: **(EXPERIMENTAL)** *(Optional)* Cookie partition key. If not set, the cookie will be set as not partitioned.
     :returns: Always set to true. If an error occurs, the response indicates protocol error.
     '''
     params: T_JSON_DICT = dict()
@@ -2956,7 +2989,7 @@ def set_cookie(
     if source_port is not None:
         params['sourcePort'] = source_port
     if partition_key is not None:
-        params['partitionKey'] = partition_key
+        params['partitionKey'] = partition_key.to_json()
     cmd_dict: T_JSON_DICT = {
         'method': 'Network.setCookie',
         'params': params,
@@ -3766,7 +3799,7 @@ class ResponseReceivedExtraInfo:
     headers_text: typing.Optional[str]
     #: The cookie partition key that will be used to store partitioned cookies set in this response.
     #: Only sent when partitioned cookies are enabled.
-    cookie_partition_key: typing.Optional[str]
+    cookie_partition_key: typing.Optional[CookiePartitionKey]
     #: True if partitioned cookies are enabled, but the partition key is not serializable to string.
     cookie_partition_key_opaque: typing.Optional[bool]
     #: A list of cookies which should have been blocked by 3PCD but are exempted and stored from
@@ -3782,7 +3815,7 @@ class ResponseReceivedExtraInfo:
             resource_ip_address_space=IPAddressSpace.from_json(json['resourceIPAddressSpace']),
             status_code=int(json['statusCode']),
             headers_text=str(json['headersText']) if json.get('headersText', None) is not None else None,
-            cookie_partition_key=str(json['cookiePartitionKey']) if json.get('cookiePartitionKey', None) is not None else None,
+            cookie_partition_key=CookiePartitionKey.from_json(json['cookiePartitionKey']) if json.get('cookiePartitionKey', None) is not None else None,
             cookie_partition_key_opaque=bool(json['cookiePartitionKeyOpaque']) if json.get('cookiePartitionKeyOpaque', None) is not None else None,
             exempted_cookies=[ExemptedSetCookieWithReason.from_json(i) for i in json['exemptedCookies']] if json.get('exemptedCookies', None) is not None else None
         )
@@ -3845,6 +3878,23 @@ class TrustTokenOperationDone:
             top_level_origin=str(json['topLevelOrigin']) if json.get('topLevelOrigin', None) is not None else None,
             issuer_origin=str(json['issuerOrigin']) if json.get('issuerOrigin', None) is not None else None,
             issued_token_count=int(json['issuedTokenCount']) if json.get('issuedTokenCount', None) is not None else None
+        )
+
+
+@event_class('Network.policyUpdated')
+@dataclass
+class PolicyUpdated:
+    '''
+    **EXPERIMENTAL**
+
+    Fired once security policy has been updated.
+    '''
+
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> PolicyUpdated:
+        return cls(
+
         )
 
 

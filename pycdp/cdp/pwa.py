@@ -64,6 +64,21 @@ class FileHandler:
         )
 
 
+class DisplayMode(enum.Enum):
+    '''
+    If user prefers opening the app in browser or an app window.
+    '''
+    STANDALONE = "standalone"
+    BROWSER = "browser"
+
+    def to_json(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_json(cls, json: str) -> DisplayMode:
+        return cls(json)
+
+
 def get_os_app_state(
         manifest_id: str
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.Tuple[int, typing.List[FileHandler]]]:
@@ -123,7 +138,7 @@ def uninstall(
         manifest_id: str
     ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
     '''
-    Uninstals the given manifest_id and closes any opened app windows.
+    Uninstalls the given manifest_id and closes any opened app windows.
 
     :param manifest_id:
     '''
@@ -172,7 +187,7 @@ def launch_files_in_app(
     used to attach to via Target.attachToTarget or similar APIs.
     If some files in the parameters cannot be handled by the web app, they will
     be ignored. If none of the files can be handled, this API returns an error.
-    If no files provided as the parameter, this API also returns an error.
+    If no files are provided as the parameter, this API also returns an error.
 
     According to the definition of the file handlers in the manifest file, one
     Target.TargetID may represent a page handling one or more files. The order
@@ -201,7 +216,7 @@ def open_current_page_in_app(
     '''
     Opens the current page in its web app identified by the manifest id, needs
     to be called on a page target. This function returns immediately without
-    waiting for the app finishing loading.
+    waiting for the app to finish loading.
 
     :param manifest_id:
     '''
@@ -209,6 +224,39 @@ def open_current_page_in_app(
     params['manifestId'] = manifest_id
     cmd_dict: T_JSON_DICT = {
         'method': 'PWA.openCurrentPageInApp',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def change_app_user_settings(
+        manifest_id: str,
+        link_capturing: typing.Optional[bool] = None,
+        display_mode: typing.Optional[DisplayMode] = None
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Changes user settings of the web app identified by its manifestId. If the
+    app was not installed, this command returns an error. Unset parameters will
+    be ignored; unrecognized values will cause an error.
+
+    Unlike the ones defined in the manifest files of the web apps, these
+    settings are provided by the browser and controlled by the users, they
+    impact the way the browser handling the web apps.
+
+    See the comment of each parameter.
+
+    :param manifest_id:
+    :param link_capturing: *(Optional)* If user allows the links clicked on by the user in the app's scope, or extended scope if the manifest has scope extensions and the flags ```DesktopPWAsLinkCapturingWithScopeExtensions```` and ````WebAppEnableScopeExtensions``` are enabled.  Note, the API does not support resetting the linkCapturing to the initial value, uninstalling and installing the web app again will reset it.  TODO(crbug.com/339453269): Setting this value on ChromeOS is not supported yet.
+    :param display_mode: *(Optional)*
+    '''
+    params: T_JSON_DICT = dict()
+    params['manifestId'] = manifest_id
+    if link_capturing is not None:
+        params['linkCapturing'] = link_capturing
+    if display_mode is not None:
+        params['displayMode'] = display_mode.to_json()
+    cmd_dict: T_JSON_DICT = {
+        'method': 'PWA.changeAppUserSettings',
         'params': params,
     }
     json = yield cmd_dict

@@ -19,6 +19,8 @@ from . import page
 class RequestId(str):
     '''
     Unique request identifier.
+    Note that this does not identify individual HTTP requests that are part of
+    a network request.
     '''
     def to_json(self) -> str:
         return self

@@ -99,6 +99,8 @@ class CookieExclusionReason(enum.Enum):
     EXCLUDE_DOMAIN_NON_ASCII = "ExcludeDomainNonASCII"
     EXCLUDE_THIRD_PARTY_COOKIE_BLOCKED_IN_FIRST_PARTY_SET = "ExcludeThirdPartyCookieBlockedInFirstPartySet"
     EXCLUDE_THIRD_PARTY_PHASEOUT = "ExcludeThirdPartyPhaseout"
+    EXCLUDE_PORT_MISMATCH = "ExcludePortMismatch"
+    EXCLUDE_SCHEME_MISMATCH = "ExcludeSchemeMismatch"
 
     def to_json(self) -> str:
         return self.value
@@ -121,6 +123,8 @@ class CookieWarningReason(enum.Enum):
     WARN_DOMAIN_NON_ASCII = "WarnDomainNonASCII"
     WARN_THIRD_PARTY_PHASEOUT = "WarnThirdPartyPhaseout"
     WARN_CROSS_SITE_REDIRECT_DOWNGRADE_CHANGES_INCLUSION = "WarnCrossSiteRedirectDowngradeChangesInclusion"
+    WARN_DEPRECATION_TRIAL_METADATA = "WarnDeprecationTrialMetadata"
+    WARN_THIRD_PARTY_COOKIE_HEURISTIC = "WarnThirdPartyCookieHeuristic"
 
     def to_json(self) -> str:
         return self.value
@@ -140,6 +144,47 @@ class CookieOperation(enum.Enum):
     @classmethod
     def from_json(cls, json: str) -> CookieOperation:
         return cls(json)
+
+
+class InsightType(enum.Enum):
+    '''
+    Represents the category of insight that a cookie issue falls under.
+    '''
+    GIT_HUB_RESOURCE = "GitHubResource"
+    GRACE_PERIOD = "GracePeriod"
+    HEURISTICS = "Heuristics"
+
+    def to_json(self) -> str:
+        return self.value
+
+    @classmethod
+    def from_json(cls, json: str) -> InsightType:
+        return cls(json)
+
+
+@dataclass
+class CookieIssueInsight:
+    '''
+    Information about the suggested solution to a cookie issue.
+    '''
+    type_: InsightType
+
+    #: Link to table entry in third-party cookie migration readiness list.
+    table_entry_url: typing.Optional[str] = None
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['type'] = self.type_.to_json()
+        if self.table_entry_url is not None:
+            json['tableEntryUrl'] = self.table_entry_url
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> CookieIssueInsight:
+        return cls(
+            type_=InsightType.from_json(json['type']),
+            table_entry_url=str(json['tableEntryUrl']) if json.get('tableEntryUrl', None) is not None else None,
+        )
 
 
 @dataclass
@@ -171,6 +216,9 @@ class CookieIssueDetails:
 
     request: typing.Optional[AffectedRequest] = None
 
+    #: The recommended solution to the issue.
+    insight: typing.Optional[CookieIssueInsight] = None
+
     def to_json(self) -> T_JSON_DICT:
         json: T_JSON_DICT = dict()
         json['cookieWarningReasons'] = [i.to_json() for i in self.cookie_warning_reasons]
@@ -186,6 +234,8 @@ class CookieIssueDetails:
             json['cookieUrl'] = self.cookie_url
         if self.request is not None:
             json['request'] = self.request.to_json()
+        if self.insight is not None:
+            json['insight'] = self.insight.to_json()
         return json
 
     @classmethod
@@ -199,6 +249,7 @@ class CookieIssueDetails:
             site_for_cookies=str(json['siteForCookies']) if json.get('siteForCookies', None) is not None else None,
             cookie_url=str(json['cookieUrl']) if json.get('cookieUrl', None) is not None else None,
             request=AffectedRequest.from_json(json['request']) if json.get('request', None) is not None else None,
+            insight=CookieIssueInsight.from_json(json['insight']) if json.get('insight', None) is not None else None,
         )
 
 
@@ -312,7 +363,10 @@ class BlockedByResponseReason(enum.Enum):
     COOP_SANDBOXED_I_FRAME_CANNOT_NAVIGATE_TO_COOP_PAGE = "CoopSandboxedIFrameCannotNavigateToCoopPage"
     CORP_NOT_SAME_ORIGIN = "CorpNotSameOrigin"
     CORP_NOT_SAME_ORIGIN_AFTER_DEFAULTED_TO_SAME_ORIGIN_BY_COEP = "CorpNotSameOriginAfterDefaultedToSameOriginByCoep"
+    CORP_NOT_SAME_ORIGIN_AFTER_DEFAULTED_TO_SAME_ORIGIN_BY_DIP = "CorpNotSameOriginAfterDefaultedToSameOriginByDip"
+    CORP_NOT_SAME_ORIGIN_AFTER_DEFAULTED_TO_SAME_ORIGIN_BY_COEP_AND_DIP = "CorpNotSameOriginAfterDefaultedToSameOriginByCoepAndDip"
     CORP_NOT_SAME_SITE = "CorpNotSameSite"
+    SRI_MESSAGE_SIGNATURE_MISMATCH = "SRIMessageSignatureMismatch"
 
     def to_json(self) -> str:
         return self.value
@@ -649,6 +703,7 @@ class AttributionReportingIssueType(enum.Enum):
     NO_REGISTER_TRIGGER_HEADER = "NoRegisterTriggerHeader"
     NO_REGISTER_OS_SOURCE_HEADER = "NoRegisterOsSourceHeader"
     NO_REGISTER_OS_TRIGGER_HEADER = "NoRegisterOsTriggerHeader"
+    NAVIGATION_REGISTRATION_UNIQUE_SCOPE_ALREADY_SET = "NavigationRegistrationUniqueScopeAlreadySet"
 
     def to_json(self) -> str:
         return self.value
@@ -806,7 +861,6 @@ class SharedDictionaryIssueDetails:
 
 
 class GenericIssueErrorType(enum.Enum):
-    CROSS_ORIGIN_PORTAL_POST_MESSAGE_ERROR = "CrossOriginPortalPostMessageError"
     FORM_LABEL_FOR_NAME_ERROR = "FormLabelForNameError"
     FORM_DUPLICATE_ID_FOR_INPUT_ERROR = "FormDuplicateIdForInputError"
     FORM_INPUT_WITH_NO_LABEL_ERROR = "FormInputWithNoLabelError"
@@ -1007,7 +1061,9 @@ class FederatedAuthRequestIssueReason(enum.Enum):
     CLIENT_METADATA_NO_RESPONSE = "ClientMetadataNoResponse"
     CLIENT_METADATA_INVALID_RESPONSE = "ClientMetadataInvalidResponse"
     CLIENT_METADATA_INVALID_CONTENT_TYPE = "ClientMetadataInvalidContentType"
+    IDP_NOT_POTENTIALLY_TRUSTWORTHY = "IdpNotPotentiallyTrustworthy"
     DISABLED_IN_SETTINGS = "DisabledInSettings"
+    DISABLED_IN_FLAGS = "DisabledInFlags"
     ERROR_FETCHING_SIGNIN = "ErrorFetchingSignin"
     INVALID_SIGNIN_RESPONSE = "InvalidSigninResponse"
     ACCOUNTS_HTTP_NOT_FOUND = "AccountsHttpNotFound"
@@ -1029,8 +1085,10 @@ class FederatedAuthRequestIssueReason(enum.Enum):
     THIRD_PARTY_COOKIES_BLOCKED = "ThirdPartyCookiesBlocked"
     NOT_SIGNED_IN_WITH_IDP = "NotSignedInWithIdp"
     MISSING_TRANSIENT_USER_ACTIVATION = "MissingTransientUserActivation"
-    REPLACED_BY_BUTTON_MODE = "ReplacedByButtonMode"
+    REPLACED_BY_ACTIVE_MODE = "ReplacedByActiveMode"
+    INVALID_FIELDS_SPECIFIED = "InvalidFieldsSpecified"
     RELYING_PARTY_ORIGIN_IS_OPAQUE = "RelyingPartyOriginIsOpaque"
+    TYPE_NOT_MATCHING = "TypeNotMatching"
 
     def to_json(self) -> str:
         return self.value
