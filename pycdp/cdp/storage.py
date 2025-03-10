@@ -32,7 +32,6 @@ class StorageType(enum.Enum):
     '''
     Enum of possible storage types.
     '''
-    APPCACHE = "appcache"
     COOKIES = "cookies"
     FILE_SYSTEMS = "file_systems"
     INDEXEDDB = "indexeddb"
@@ -1819,6 +1818,32 @@ def get_related_website_sets() -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typin
     }
     json = yield cmd_dict
     return [RelatedWebsiteSet.from_json(i) for i in json['sets']]
+
+
+def get_affected_urls_for_third_party_cookie_metadata(
+        first_party_url: str,
+        third_party_urls: typing.List[str]
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,typing.List[str]]:
+    '''
+    Returns the list of URLs from a page and its embedded resources that match
+    existing grace period URL pattern rules.
+    https://developers.google.com/privacy-sandbox/cookies/temporary-exceptions/grace-period
+
+    **EXPERIMENTAL**
+
+    :param first_party_url: The URL of the page currently being visited.
+    :param third_party_urls: The list of embedded resource URLs from the page.
+    :returns: Array of matching URLs. If there is a primary pattern match for the first- party URL, only the first-party URL is returned in the array.
+    '''
+    params: T_JSON_DICT = dict()
+    params['firstPartyUrl'] = first_party_url
+    params['thirdPartyUrls'] = [i for i in third_party_urls]
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Storage.getAffectedUrlsForThirdPartyCookieMetadata',
+        'params': params,
+    }
+    json = yield cmd_dict
+    return [str(i) for i in json['matchedUrls']]
 
 
 @event_class('Storage.cacheStorageContentUpdated')

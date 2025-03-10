@@ -18,6 +18,66 @@ from deprecated.sphinx import deprecated # type: ignore
 
 
 @dataclass
+class SafeAreaInsets:
+    #: Overrides safe-area-inset-top.
+    top: typing.Optional[int] = None
+
+    #: Overrides safe-area-max-inset-top.
+    top_max: typing.Optional[int] = None
+
+    #: Overrides safe-area-inset-left.
+    left: typing.Optional[int] = None
+
+    #: Overrides safe-area-max-inset-left.
+    left_max: typing.Optional[int] = None
+
+    #: Overrides safe-area-inset-bottom.
+    bottom: typing.Optional[int] = None
+
+    #: Overrides safe-area-max-inset-bottom.
+    bottom_max: typing.Optional[int] = None
+
+    #: Overrides safe-area-inset-right.
+    right: typing.Optional[int] = None
+
+    #: Overrides safe-area-max-inset-right.
+    right_max: typing.Optional[int] = None
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        if self.top is not None:
+            json['top'] = self.top
+        if self.top_max is not None:
+            json['topMax'] = self.top_max
+        if self.left is not None:
+            json['left'] = self.left
+        if self.left_max is not None:
+            json['leftMax'] = self.left_max
+        if self.bottom is not None:
+            json['bottom'] = self.bottom
+        if self.bottom_max is not None:
+            json['bottomMax'] = self.bottom_max
+        if self.right is not None:
+            json['right'] = self.right
+        if self.right_max is not None:
+            json['rightMax'] = self.right_max
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> SafeAreaInsets:
+        return cls(
+            top=int(json['top']) if json.get('top', None) is not None else None,
+            top_max=int(json['topMax']) if json.get('topMax', None) is not None else None,
+            left=int(json['left']) if json.get('left', None) is not None else None,
+            left_max=int(json['leftMax']) if json.get('leftMax', None) is not None else None,
+            bottom=int(json['bottom']) if json.get('bottom', None) is not None else None,
+            bottom_max=int(json['bottomMax']) if json.get('bottomMax', None) is not None else None,
+            right=int(json['right']) if json.get('right', None) is not None else None,
+            right_max=int(json['rightMax']) if json.get('rightMax', None) is not None else None,
+        )
+
+
+@dataclass
 class ScreenOrientation:
     '''
     Screen orientation.
@@ -533,6 +593,26 @@ def set_default_background_color_override(
         params['color'] = color.to_json()
     cmd_dict: T_JSON_DICT = {
         'method': 'Emulation.setDefaultBackgroundColorOverride',
+        'params': params,
+    }
+    json = yield cmd_dict
+
+
+def set_safe_area_insets_override(
+        insets: SafeAreaInsets
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+    '''
+    Overrides the values for env(safe-area-inset-*) and env(safe-area-max-inset-*). Unset values will cause the
+    respective variables to be undefined, even if previously overridden.
+
+    **EXPERIMENTAL**
+
+    :param insets:
+    '''
+    params: T_JSON_DICT = dict()
+    params['insets'] = insets.to_json()
+    cmd_dict: T_JSON_DICT = {
+        'method': 'Emulation.setSafeAreaInsetsOverride',
         'params': params,
     }
     json = yield cmd_dict

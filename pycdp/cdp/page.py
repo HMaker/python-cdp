@@ -165,7 +165,7 @@ class GatedAPIFeatures(enum.Enum):
 class PermissionsPolicyFeature(enum.Enum):
     '''
     All Permissions Policy features. This enum should match the one defined
-    in third_party/blink/renderer/core/permissions_policy/permissions_policy_features.json5.
+    in services/network/public/cpp/permissions_policy/permissions_policy_features.json5.
     '''
     ACCELEROMETER = "accelerometer"
     ALL_SCREENS_CAPTURE = "all-screens-capture"
@@ -188,6 +188,7 @@ class PermissionsPolicyFeature(enum.Enum):
     CH_UA = "ch-ua"
     CH_UA_ARCH = "ch-ua-arch"
     CH_UA_BITNESS = "ch-ua-bitness"
+    CH_UA_HIGH_ENTROPY_VALUES = "ch-ua-high-entropy-values"
     CH_UA_PLATFORM = "ch-ua-platform"
     CH_UA_MODEL = "ch-ua-model"
     CH_UA_MOBILE = "ch-ua-mobile"
@@ -475,6 +476,28 @@ class OriginTrial:
 
 
 @dataclass
+class SecurityOriginDetails:
+    '''
+    Additional information about the frame document's security origin.
+    '''
+    #: Indicates whether the frame document's security origin is one
+    #: of the local hostnames (e.g. "localhost") or IP addresses (IPv4
+    #: 127.0.0.0/8 or IPv6 ::1).
+    is_localhost: bool
+
+    def to_json(self) -> T_JSON_DICT:
+        json: T_JSON_DICT = dict()
+        json['isLocalhost'] = self.is_localhost
+        return json
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> SecurityOriginDetails:
+        return cls(
+            is_localhost=bool(json['isLocalhost']),
+        )
+
+
+@dataclass
 class Frame:
     '''
     Information about the Frame on the page.
@@ -518,6 +541,9 @@ class Frame:
     #: Frame document's URL fragment including the '#'.
     url_fragment: typing.Optional[str] = None
 
+    #: Additional details about the frame document's security origin.
+    security_origin_details: typing.Optional[SecurityOriginDetails] = None
+
     #: If the frame failed to load, this contains the URL that could not be loaded. Note that unlike url above, this URL may contain a fragment.
     unreachable_url: typing.Optional[str] = None
 
@@ -541,6 +567,8 @@ class Frame:
             json['name'] = self.name
         if self.url_fragment is not None:
             json['urlFragment'] = self.url_fragment
+        if self.security_origin_details is not None:
+            json['securityOriginDetails'] = self.security_origin_details.to_json()
         if self.unreachable_url is not None:
             json['unreachableUrl'] = self.unreachable_url
         if self.ad_frame_status is not None:
@@ -562,6 +590,7 @@ class Frame:
             parent_id=FrameId.from_json(json['parentId']) if json.get('parentId', None) is not None else None,
             name=str(json['name']) if json.get('name', None) is not None else None,
             url_fragment=str(json['urlFragment']) if json.get('urlFragment', None) is not None else None,
+            security_origin_details=SecurityOriginDetails.from_json(json['securityOriginDetails']) if json.get('securityOriginDetails', None) is not None else None,
             unreachable_url=str(json['unreachableUrl']) if json.get('unreachableUrl', None) is not None else None,
             ad_frame_status=AdFrameStatus.from_json(json['adFrameStatus']) if json.get('adFrameStatus', None) is not None else None,
         )
@@ -1822,6 +1851,7 @@ class BackForwardCacheNotRestoredReason(enum.Enum):
     EMBEDDER_EXTENSION_SENT_MESSAGE_TO_CACHED_FRAME = "EmbedderExtensionSentMessageToCachedFrame"
     REQUESTED_BY_WEB_VIEW_CLIENT = "RequestedByWebViewClient"
     POST_MESSAGE_BY_WEB_VIEW_CLIENT = "PostMessageByWebViewClient"
+    CACHE_CONTROL_NO_STORE_DEVICE_BOUND_SESSION_TERMINATED = "CacheControlNoStoreDeviceBoundSessionTerminated"
 
     def to_json(self) -> str:
         return self.value
@@ -2176,12 +2206,20 @@ def disable() -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
     json = yield cmd_dict
 
 
-def enable() -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
+def enable(
+        enable_file_chooser_opened_event: typing.Optional[bool] = None
+    ) -> typing.Generator[T_JSON_DICT,T_JSON_DICT,None]:
     '''
     Enables page domain notifications.
+
+    :param enable_file_chooser_opened_event: **(EXPERIMENTAL)** *(Optional)* If true, the ```Page.fileChooserOpened```` event will be emitted regardless of the state set by ````Page.setInterceptFileChooserDialog``` command (default: false).
     '''
+    params: T_JSON_DICT = dict()
+    if enable_file_chooser_opened_event is not None:
+        params['enableFileChooserOpenedEvent'] = enable_file_chooser_opened_event
     cmd_dict: T_JSON_DICT = {
         'method': 'Page.enable',
+        'params': params,
     }
     json = yield cmd_dict
 
@@ -3473,6 +3511,41 @@ class FrameResized:
     def from_json(cls, json: T_JSON_DICT) -> FrameResized:
         return cls(
 
+        )
+
+
+@event_class('Page.frameStartedNavigating')
+@dataclass
+class FrameStartedNavigating:
+    '''
+    **EXPERIMENTAL**
+
+    Fired when a navigation starts. This event is fired for both
+    renderer-initiated and browser-initiated navigations. For renderer-initiated
+    navigations, the event is fired after ``frameRequestedNavigation``.
+    Navigation may still be cancelled after the event is issued. Multiple events
+    can be fired for a single navigation, for example, when a same-document
+    navigation becomes a cross-document navigation (such as in the case of a
+    frameset).
+    '''
+    #: ID of the frame that is being navigated.
+    frame_id: FrameId
+    #: The URL the navigation started with. The final URL can be different.
+    url: str
+    #: Loader identifier. Even though it is present in case of same-document
+    #: navigation, the previously committed loaderId would not change unless
+    #: the navigation changes from a same-document to a cross-document
+    #: navigation.
+    loader_id: network.LoaderId
+    navigation_type: str
+
+    @classmethod
+    def from_json(cls, json: T_JSON_DICT) -> FrameStartedNavigating:
+        return cls(
+            frame_id=FrameId.from_json(json['frameId']),
+            url=str(json['url']),
+            loader_id=network.LoaderId.from_json(json['loaderId']),
+            navigation_type=str(json['navigationType'])
         )
 
 
