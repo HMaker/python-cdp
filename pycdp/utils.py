@@ -50,7 +50,7 @@ class Retry(LoggerMixin):
         loop: IEventLoop,
         *,
         retries: int = 1,
-        on_error: t.Union[str, t.Callable[[], t.Awaitable[None]]] = None,
+        on_error: t.Optional[t.Union[str, t.Callable[[], t.Awaitable[None]]]] = None,
         log_errors: bool = False
     ):
         super().__init__()
@@ -155,7 +155,7 @@ def retry_on(
     delay_growth: float = 1.0,
     max_delay: int = 600,
     log_errors: bool = False,
-    on_error: str = None,
+    on_error: t.Optional[str] = None,
 ):
     if not isinstance(delay, (float, tuple)):
         raise TypeError('delay must be a float or a tuple of 2 floats')

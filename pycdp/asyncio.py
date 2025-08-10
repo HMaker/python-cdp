@@ -68,7 +68,7 @@ class CDPBase(LoggerMixin):
     '''
     Contains shared functionality between the CDP connection and session.
     '''
-    def __init__(self, ws: ClientWebSocketResponse=None, session_id=None, target_id=None):
+    def __init__(self, ws: t.Optional[ClientWebSocketResponse]=None, session_id=None, target_id=None):
         super().__init__()
         self._listeners: t.Dict[type, t.Set[CDPEventListener]] = defaultdict(set)
         self._id_iter = itertools.count()
