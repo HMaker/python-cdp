@@ -48,7 +48,6 @@ class CDPEventListener:
         self._closed = True
         if self._get_task is not None:
             self._get_task.cancel()
-            #self._get_task = None
 
     async def __aiter__(self):
         try:
