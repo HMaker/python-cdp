@@ -7,47 +7,14 @@ from twisted.internet import reactor
 from twisted.internet.task import deferLater
 from pycdp.twisted import CDPEventListener, CDPEventListenerClosed
 
+from conftest import coroutine_might_block, timeoutDeferred
+
 # pytest_plugins = ("pytest_twisted",)
 
 
 CDP_EVENT_LISTENER_Q_LIMIT = 10
 
 
-def coroutine_might_block(coro):
-    # If you don't know know async/await is implemented in python, this will
-    #   look very weird to you. Starting observation: `await coro` is not
-    #   equivalent to `coro.__await__()`. That would only be the first step.
-    # After __await__ is called, Python expects it to return an iterator.
-    # That iterator is then used to check if the coroutine is done
-    # That iterator yields values. And Python gets those values by calling
-    # next(iterator) (or iterator.send(), I think). If, instead, StopIteration
-    # is thrown, it means that the coroutine is done, and the result
-    # is stored in the exception. Yes, it's a little weird: the ending
-    # of a coroutine is represented by an exception.
-    #
-    # If an actual value is yielded, it means that the coroutine is not done.
-    # At this point, Python could just do busy polling, and call
-    # next(iterator) in an infinite loop, until it gets the result.
-    # But then, we wouldn't have true concurrency. So, instead, Python says:
-    # "Ok, I gave you one chance to finish, but you didn't. Then I'll assume
-    # you might need more time. You might not be the only coroutine that's
-    # running, so I will send you to the event loop, and it's its job to
-    # decide when to call next(iterator) again, to check if you're ready."
-    # When the iterator is passed back to the event loop, this gives the
-    # chance of other coroutines to be checked if they're done.
-
-    iterator = coro.__await__()
-    try:
-        # Get the next yield
-        # These awated object would've been sent to the driving event loop,
-        #   up on the stack
-        awaited = next(iterator)
-    except StopIteration as e:
-        # Awaitable is done, so the coroutine didn't block
-        return False, e.value
-        return e.value
-
-    return True, awaited
 
 
 class TestCDPEventListener:
@@ -75,6 +42,7 @@ class TestCDPEventListener:
 
         assert elems == expected
 
+    @timeoutDeferred(3)
     @pytest_twisted.ensureDeferred
     async def test_blocking_when_empty(self):
         listener = self.listener
@@ -99,6 +67,7 @@ class TestCDPEventListener:
 
         assert elems == expected
 
+    @timeoutDeferred(3)
     @pytest_twisted.ensureDeferred
     async def test_queue_full(self):
         listener = self.listener
@@ -121,6 +90,7 @@ class TestCDPEventListener:
             listener.put({0: 0})
             listener.put({0: 0})
 
+    @timeoutDeferred(3)
     @pytest_twisted.ensureDeferred
     async def test_queue_full_discard(self):
         """Tests that elements that don't fit the queue are actually discarded"""
@@ -154,6 +124,7 @@ class TestCDPEventListener:
 
         assert self.listener.closed == True
 
+    @timeoutDeferred(3)
     @pytest_twisted.ensureDeferred
     async def test_put_after_close(self):
         listener = self.listener
@@ -171,6 +142,7 @@ class TestCDPEventListener:
         with pytest.raises(CDPEventListenerClosed):
             listener.put({3: 3})
 
+    @timeoutDeferred(3)
     @pytest_twisted.ensureDeferred
     async def test_create_iterator_after_close(self):
         listener = self.listener
@@ -181,6 +153,7 @@ class TestCDPEventListener:
         with pytest.raises(StopAsyncIteration):
             await anext(iterator)
 
+    @timeoutDeferred(3)
     @pytest_twisted.ensureDeferred
     async def test_anext_after_close(self):
         listener = self.listener
@@ -198,6 +171,7 @@ class TestCDPEventListener:
         with pytest.raises(StopAsyncIteration):
             await anext(iterator)
 
+    @timeoutDeferred(3)
     @pytest_twisted.ensureDeferred
     async def test_cancel_existing_task_before_put(self):
         listener = self.listener
@@ -216,6 +190,7 @@ class TestCDPEventListener:
         # with pytest.raises(StopAsyncIteration):
         assert await task == {1: 1}
 
+    @timeoutDeferred(3)
     @pytest_twisted.ensureDeferred
     async def test_concurrent_cancel_existing_task_before_put(self):
         listener = self.listener
@@ -233,6 +208,7 @@ class TestCDPEventListener:
 
         assert await task == {1: 1}
 
+    @timeoutDeferred(3)
     @pytest_twisted.ensureDeferred
     async def test_cancel_existing_task_after_put(self):
         listener = self.listener
@@ -247,6 +223,7 @@ class TestCDPEventListener:
         with pytest.raises(StopAsyncIteration):
             await task
 
+    @timeoutDeferred(3)
     @pytest_twisted.ensureDeferred
     async def test_concurrent_cancel_existing_task_after_put(self):
         listener = self.listener
@@ -263,6 +240,7 @@ class TestCDPEventListener:
 
         assert await task == {1: 1}
 
+    @timeoutDeferred(3)
     @pytest_twisted.ensureDeferred
     async def test_multiple_anext(self):
         listener = self.listener
@@ -283,6 +261,7 @@ class TestCDPEventListener:
         with pytest.raises(StopAsyncIteration):
             await t3
 
+    @timeoutDeferred(3)
     @pytest_twisted.ensureDeferred
     async def test_multiple_anext_concurrent_close(self):
         listener = self.listener
@@ -305,6 +284,7 @@ class TestCDPEventListener:
         with pytest.raises(StopAsyncIteration):
             await t3
 
+    @timeoutDeferred(3)
     @pytest_twisted.ensureDeferred
     async def test_multiple_anext_concurrent_close_reverse(self):
         listener = self.listener
