@@ -46,9 +46,12 @@ class CDPEventListener:
 
     def close(self):
         self._closed = True
-        for task in self._pending_tasks:
+        # task.cancel can trigger other methods of this class
+        # So, we can't use a for loop, because self._pending_tasks can be
+        # mutated
+        while len(self._pending_tasks) > 0:
+            task = self._pending_tasks.pop()
             task.cancel()
-        self._pending_tasks.clear()
 
     async def __aiter__(self):
         get_task = None
@@ -58,7 +61,7 @@ class CDPEventListener:
                 # Store the task so it can be canceled, if needed
                 self._pending_tasks.add(get_task)
                 elem = await get_task
-                self._pending_tasks.remove(get_task)
+                self._pending_tasks.discard(get_task)
                 get_task = None
                 yield elem
         except CancelledError:
@@ -67,7 +70,7 @@ class CDPEventListener:
         finally:
             self._closed = True
             if get_task is not None:
-                self._pending_tasks.remove(get_task)
+                self._pending_tasks.discard(get_task)
             get_task = None
 
     def __str__(self) -> str:
