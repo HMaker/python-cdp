@@ -191,20 +191,39 @@ class TestCDPEventListener:
         listener = self.listener
 
         iterator = aiter(listener)
-        task1 = anext(iterator)
-        task2 = anext(iterator)
+        task = anext(iterator)
 
         assert coroutine_might_block(task)
 
         def concurrent_function():
             listener.put({1: 1})
-            listener.put({2: 2})
             listener.close()
 
         reactor.callLater(0, concurrent_function)
 
-        assert await task1 == {1: 1}
-        assert await task2 == {2: 2}
+        assert await task == {1: 1}
+
+    @timeoutDeferred(3)
+    @pytest_twisted.ensureDeferred
+    async def test_garbage_collection(self):
+        listener = self.listener
+
+        iterator = aiter(listener)
+        task = anext(iterator)
+
+        assert coroutine_might_block(task)
+
+        def concurrent_function():
+            listener.put({1: 1})
+            # When we call put, the event loop gives back execution to the
+            #   await statement, which marks iterator to be garbage collected,
+            #   which in turn, triggers the finally statement in the listener
+            with pytest.raises(CDPEventListenerClosed):
+                listener.put({2: 2})
+
+        reactor.callLater(0, concurrent_function)
+
+        await task
 
     @timeoutDeferred(3)
     @pytest_twisted.ensureDeferred
