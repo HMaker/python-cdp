@@ -30,11 +30,24 @@ class TwistedEventLoop(IEventLoop):
 loop = TwistedEventLoop(reactor)
 
 
+class TwistedEventLoop(IEventLoop):
+
+    def __init__(self, reactor):
+        self._reactor = reactor
+
+    async def sleep(self, delay: float):
+        sleep = Deferred()
+        self._reactor.callLater(delay, sleep.callback, None)
+        await sleep
+
+loop = TwistedEventLoop(reactor)
+
+
+_CLOSE_SENTINEL = object
 class CDPEventListener:
     def __init__(self, buffer_size: int = 100):
         self._queue = DeferredQueue(buffer_size)
         self._closed = False
-        self._pending_tasks = set()
 
     @property
     def closed(self):
@@ -46,32 +59,20 @@ class CDPEventListener:
 
     def close(self):
         self._closed = True
-        # task.cancel can trigger other methods of this class
-        # So, we can't use a for loop, because self._pending_tasks can be
-        # mutated
-        while len(self._pending_tasks) > 0:
-            task = self._pending_tasks.pop()
-            task.cancel()
+        try:
+            self._queue.put(_CLOSE_SENTINEL)
+        except QueueOverflow:
+            pass
 
     async def __aiter__(self):
-        get_task = None
         try:
             while not self._closed:
-                get_task = self._queue.get()
-                # Store the task so it can be canceled, if needed
-                self._pending_tasks.add(get_task)
-                elem = await get_task
-                self._pending_tasks.discard(get_task)
-                get_task = None
+                elem = await self._queue.get()
+                if elem is _CLOSE_SENTINEL:
+                    return
                 yield elem
-        except CancelledError:
-            # If we return from __aiter__, StopAstncIteration will be thrown for anext
-            return
         finally:
             self._closed = True
-            if get_task is not None:
-                self._pending_tasks.discard(get_task)
-            get_task = None
 
     def __str__(self) -> str:
         return f'{self.__class__.__name__}(buffer={len(self._queue.pending)}/{self._queue.size}, closed={self._closed})'
