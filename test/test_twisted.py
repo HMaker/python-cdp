@@ -9,12 +9,8 @@ from pycdp.twisted import CDPEventListener, CDPEventListenerClosed
 
 from conftest import coroutine_might_block, timeoutDeferred
 
-# pytest_plugins = ("pytest_twisted",)
-
 
 CDP_EVENT_LISTENER_Q_LIMIT = 10
-
-
 
 
 class TestCDPEventListener:
@@ -187,7 +183,6 @@ class TestCDPEventListener:
         # The await statement should give the execution back to the reactor,
         # and execute the deferred callback first. After that, it will get
         # back to the task.
-        # with pytest.raises(StopAsyncIteration):
         assert await task == {1: 1}
 
     @timeoutDeferred(3)
@@ -196,17 +191,20 @@ class TestCDPEventListener:
         listener = self.listener
 
         iterator = aiter(listener)
-        task = anext(iterator)
+        task1 = anext(iterator)
+        task2 = anext(iterator)
 
         assert coroutine_might_block(task)
 
         def concurrent_function():
             listener.put({1: 1})
+            listener.put({2: 2})
             listener.close()
 
         reactor.callLater(0, concurrent_function)
 
-        assert await task == {1: 1}
+        assert await task1 == {1: 1}
+        assert await task2 == {2: 2}
 
     @timeoutDeferred(3)
     @pytest_twisted.ensureDeferred
