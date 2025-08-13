@@ -34,7 +34,7 @@ class CDPEventListener:
     def __init__(self, buffer_size: int = 100):
         self._queue = DeferredQueue(buffer_size)
         self._closed = False
-        self._get_task = None
+        self._pending_tasks = set()
 
     @property
     def closed(self):
@@ -46,23 +46,29 @@ class CDPEventListener:
 
     def close(self):
         self._closed = True
-        if self._get_task is not None:
-            self._get_task.cancel()
+        for task in self._pending_tasks:
+            task.cancel()
+        self._pending_tasks.clear()
 
     async def __aiter__(self):
+        get_task = None
         try:
             while not self._closed:
+                get_task = self._queue.get()
                 # Store the task so it can be canceled, if needed
-                self._get_task = self._queue.get()
-                elem = await self._get_task
-                self.get_task = None
+                self._pending_tasks.add(get_task)
+                elem = await get_task
+                self._pending_tasks.remove(get_task)
+                get_task = None
                 yield elem
         except CancelledError:
             # If we return from __aiter__, StopAstncIteration will be thrown for anext
             return
         finally:
             self._closed = True
-            self.get_task = None
+            if get_task is not None:
+                self._pending_tasks.remove(get_task)
+            get_task = None
 
     def __str__(self) -> str:
         return f'{self.__class__.__name__}(buffer={len(self._queue.pending)}/{self._queue.size}, closed={self._closed})'
