@@ -210,9 +210,9 @@ def test_cdp_class_type():
             def from_json(cls, json: T_JSON_DICT) -> AXValue:
                 return cls(
                     type_=AXValueType.from_json(json['type']),
-                    value=json['value'] if 'value' in json else None,
-                    related_nodes=[AXRelatedNode.from_json(i) for i in json['relatedNodes']] if 'relatedNodes' in json else None,
-                    sources=[AXValueSource.from_json(i) for i in json['sources']] if 'sources' in json else None,
+                    value=json['value'] if json.get('value', None) is not None else None,
+                    related_nodes=[AXRelatedNode.from_json(i) for i in json['relatedNodes']] if json.get('relatedNodes', None) is not None else None,
+                    sources=[AXValueSource.from_json(i) for i in json['sources']] if json.get('sources', None) is not None else None,
                 )""")
 
     type = CdpType.from_json(json_type, '')
@@ -567,7 +567,7 @@ def test_cdp_command_multiple_return():
             }
             json = yield cmd_dict
             return (
-                str(json['body']) if 'body' in json else None,
+                str(json['body']) if json.get('body', None) is not None else None,
                 int(json['originalSize']),
                 int(json['encodedSize'])
             )""")
