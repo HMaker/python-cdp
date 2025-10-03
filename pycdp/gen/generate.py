@@ -949,7 +949,8 @@ def generate_init(init_path, domains):
     '''
     with init_path.open('w') as init_file:
         init_file.write(INIT_HEADER)
-        init_file.write('from . import ({})'.format(', '.join(domain.module for domain in domains)))
+        init_file.write('from . import ({})\n'.format(', '.join(domain.module for domain in domains)))
+        init_file.write('from .util import UnknownEvent, UnknownObject')
 
 
 def generate_docs(docs_path, domains):
