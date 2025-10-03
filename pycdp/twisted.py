@@ -96,7 +96,7 @@ class CDPConnector(WebSocketClientFactory):
 
 class CDPBase(LoggerMixin):
 
-    def __init__(self, ws: CDPSocket=None, session_id=None, target_id=None):
+    def __init__(self, ws: t.Optional[CDPSocket]=None, session_id=None, target_id=None):
         super().__init__()
         self._listeners: t.Dict[type, t.Set[CDPEventListener]] = defaultdict(set)
         self._id_iter = itertools.count()
