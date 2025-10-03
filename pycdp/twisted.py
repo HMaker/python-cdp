@@ -30,11 +30,23 @@ class TwistedEventLoop(IEventLoop):
 loop = TwistedEventLoop(reactor)
 
 
+class TwistedEventLoop(IEventLoop):
+
+    def __init__(self, reactor):
+        self._reactor = reactor
+
+    async def sleep(self, delay: float):
+        sleep = Deferred()
+        self._reactor.callLater(delay, sleep.callback, None)
+        await sleep
+
+loop = TwistedEventLoop(reactor)
+
+
 _CLOSE_SENTINEL = object
 class CDPEventListener:
-
-    def __init__(self, queue: DeferredQueue):
-        self._queue = queue
+    def __init__(self, buffer_size: int = 100):
+        self._queue = DeferredQueue(buffer_size)
         self._closed = False
 
     @property
@@ -137,13 +149,18 @@ class CDPBase(LoggerMixin):
                 del self._inflight_cmd[cmd_id]
             raise
 
+    def create_listener(self, *event_types: t.Type[T], buffer_size=100) -> CDPEventListener:
+        listener = CDPEventListener(buffer_size)
+        for event_type in event_types:
+            self._listeners[event_type].add(listener)
+
+        return listener
+
     def listen(self, *event_types: t.Type[T], buffer_size=100) -> t.AsyncIterator[T]:
         '''Return an async iterator that iterates over events matching the
         indicated types.'''
-        receiver = CDPEventListener(DeferredQueue(buffer_size))
-        for event_type in event_types:
-            self._listeners[event_type].add(receiver)
-        return receiver.__aiter__()
+        listener = self.create_listener(*event_types, buffer_size=buffer_size)
+        return listener.__aiter__()
 
     @asynccontextmanager
     async def wait_for(self, event_type: t.Type[T], buffer_size=100) -> t.AsyncGenerator[T, None]:
